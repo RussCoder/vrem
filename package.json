@@ -1,0 +1,33 @@
+{
+  "name": "vrem",
+  "version": "0.0.0",
+  "description": "An open-source automatic time-tracker",
+  "author": "RussCoder",
+  "license": "The Unlicense",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RussCoder/vrem.git"
+  },
+  "keywords": [
+    "time",
+    "automatic",
+    "time-tracker"
+  ],
+  "os": [
+    "win32"
+  ],
+  "bin": {
+    "vrem": "src/index.js"
+  },
+  "scripts": {
+    "preuninstall": "node src/index.js stop",
+    "postinstall": "node src/postinstall.js",
+    "vrem": "node src/index.js",
+    "tracker": "node src/tracker.js",
+    "build": "node-gyp build"
+  },
+  "dependencies": {
+    "commander": "^6.1.0",
+    "node-addon-api": "*"
+  }
+}
