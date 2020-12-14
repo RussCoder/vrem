@@ -24,10 +24,12 @@
     "postinstall": "node src/postinstall.js",
     "vrem": "node src/index.js",
     "tracker": "node src/tracker.js",
+    "server": "nodemon src/server/server.js --watch src",
     "build": "node-gyp build"
   },
   "dependencies": {
     "commander": "^6.1.0",
+    "express": "^4.17.1",
     "node-addon-api": "*"
   }
 }

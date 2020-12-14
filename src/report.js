@@ -1,47 +1,8 @@
 'use strict';
 
-const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
 const dataUtils = require('./data_utils');
 const colors = require('./colors');
-
-async function* getLogEntriesFromFile(filePath) {
-    if (!fs.existsSync(filePath)) {
-        return;
-    }
-
-    const rl = readline.createInterface({
-        input: fs.createReadStream(filePath),
-        crlfDelay: Infinity
-    });
-
-    for await (const line of rl) {
-        try {
-            yield JSON.parse(line);
-        } catch (e) { }
-    }
-}
-
-async function* getLogEntriesForDates(from, to) {
-    const logsFolder = dataUtils.autoTimeLogsFolder;
-    const startFile = dataUtils.getFileNameByDate(from);
-    const endFile = dataUtils.getFileNameByDate(to);
-    const startTime = from.getTime();
-    const endTime = to.getTime();
-
-    const files = fs.readdirSync(dataUtils.autoTimeLogsFolder).filter(fileName => {
-        return fileName >= startFile && fileName <= endFile;
-    }).sort();
-
-    for (const file of files) {
-        for await (const entry of getLogEntriesFromFile(path.resolve(logsFolder, file))) {
-            if (entry.timestamp >= startTime && entry.timestamp <= endTime) {
-                yield entry;
-            }
-        }
-    }
-}
 
 async function formRawReportFromLogEntries(logEntries) {
     const report = {};
@@ -212,14 +173,27 @@ function isoDateStringToDate(string) {
     return dateObject;
 }
 
-async function reportCommand(date, { from, to }) {
+function processDates(date, from, to) {
     date = date && isoDateStringToDate(date) || new Date();
     from = from && isoDateStringToDate(from) || new Date(date.getTime());
     to = to && isoDateStringToDate(to) || new Date((date.getTime()));
     from.setHours(0, 0, 0, 0);
     to.setHours(23, 59, 59, 999);
 
-    prettyPrintReport(normalizeRawReport(await formRawReportFromLogEntries(getLogEntriesForDates(from, to))), from, to);
+    return [from, to];
 }
 
-module.exports = reportCommand;
+async function getReport(from, to) {
+    console.log(from, to);
+    const rawReport = await formRawReportFromLogEntries(dataUtils.getLogEntriesForDates(...processDates(null, from, to)));
+    return normalizeRawReport(rawReport);
+}
+
+async function reportCommand(date, { from, to }) {
+    prettyPrintReport(await getReport(...processDates(date, from, to)), from, to);
+}
+
+module.exports = {
+    getReport,
+    reportCommand,
+};

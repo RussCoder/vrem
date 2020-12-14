@@ -109,7 +109,7 @@ program
     .description('show the statistics of apps usage')
     .option('--from <date>', 'the start date')
     .option('--to <date>', 'the end date')
-    .action(require('./report'));
+    .action(require('./report').reportCommand);
 
 
 void program.parseAsync(process.argv);
