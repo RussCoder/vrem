@@ -4,16 +4,11 @@ const dataUtils = require('../data_utils');
 const { getReport } = require('../report');
 
 module.exports = {
-    async getLogEntries() {
-        const logs = [];
-        for await (const entry of dataUtils.getLogEntriesForDates()) {
-            logs.push(entry);
-        }
-
-        return logs;
+    getLogEntries() {
+        return dataUtils.getAutoLogEntriesForDates();
     },
 
-    async getReport(from, to) {
-        return await getReport(from, to);
+    getReport(from, to) {
+        return getReport(from, to);
     },
 };

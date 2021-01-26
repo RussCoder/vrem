@@ -6,8 +6,15 @@ const constants = require('./constants');
 const { getActiveProgram, getIdleTime } = require('../build/Release/vrem_windows.node');
 const fs = require('fs');
 const dataUtils = require('./data_utils');
+const db = require('./db');
+const dev = process.argv[2] === '--dev';
+
+const logTypes = Object.freeze(JSON.parse(
+    db.prepare('SELECT json_group_object(type, id) FROM AutoLogTypes;').pluck().get()
+));
 
 process.on('uncaughtException', e => {
+    dev && console.error(e);
     fs.appendFileSync(dataUtils.mainFolder + '/tracker_errors.log', e.stack, 'utf8');
     process.exit(1);
 });
@@ -42,22 +49,40 @@ function createServer() {
     });
 
     server.listen(constants.autoTrackerSocketPath, () => {
-        console.log("Vrem's tracking process is listening on socket ", constants.autoTrackerSocketPath);
+        console.info("Vrem's tracking process is listening on socket ", constants.autoTrackerSocketPath);
     });
 }
 
-const dev = !module.parent;
+function addToLogs(data) {
+    const timestamp = Date.now();
+    let type = logTypes.program,
+        description = data.description || "",
+        path = data.path;
 
-function appendToFile(data, filePath = dataUtils.getFullPathToCurrentLogFile()) {
-    if (typeof data === 'object') {
-        data = JSON.stringify(data) + '\n';
+    if (data.begin) {
+        type = logTypes.begin;
+    } else if (data.end) {
+        type = logTypes.end;
+    } else if (data.idle) {
+        type = logTypes.idle;
     }
 
-    if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(filePath, data);
-    } else {
-        fs.appendFileSync(filePath, data);
+    let programId = null;
+    if (type === logTypes.program) {
+        if (!path) return;
+        programId = db.prepare('SELECT id FROM Programs WHERE path = ?;').pluck().get(path);
     }
+
+    db.transaction(() => {
+        if (!programId && type === logTypes.program) {
+            const info = db.prepare('INSERT INTO Programs (path, description) VALUES (?, ?);')
+                .run(path, description);
+            programId = info.lastInsertRowid;
+        }
+
+        db.prepare('INSERT INTO AutoLogs (timestamp, type, programId) VALUES (?, ?, ?);')
+            .run(timestamp, type, programId);
+    })();
 }
 
 
@@ -77,10 +102,10 @@ function appendToFile(data, filePath = dataUtils.getFullPathToCurrentLogFile()) 
 
     createServer();
 
-    appendToFile({ begin: true, timestamp: Date.now() });
+    addToLogs({ begin: true, timestamp: Date.now() });
 
     process.on('exit', () => {
-        appendToFile({ end: true, timestamp: Date.now() });
+        addToLogs({ end: true, timestamp: Date.now() });
         dev && console.log('Exit');
     });
 }
@@ -97,7 +122,7 @@ setInterval(() => {
 
     if (idleTime > IDLE_THRESHOLD) {
         if (!isIdle) {
-            appendToFile({ idle: true, timestamp: Date.now() });
+            addToLogs({ idle: true, timestamp: Date.now() });
             isIdle = true;
             lastProgram = {};
         }
@@ -115,35 +140,7 @@ setInterval(() => {
     activeProgram.timestamp = Date.now();
 
     if (lastProgram.path !== activeProgram.path) {
-        appendToFile(activeProgram);
+        addToLogs(activeProgram);
         lastProgram = activeProgram;
     }
 }, 1000);
-
-/**
- * When the UTC day changes at 00:00 UTC we should add the "end" entry to the previous log file
- * and duplicate the currently active program in the new one.
- */
-function setFinishTimeoutForCurrentLogFile() {
-    const endOfDay = new Date().setUTCHours(23, 59, 59, 999);
-    const pathToTheFinishedFile = dataUtils.getFullPathToCurrentLogFile();
-
-    setTimeout(() => {
-        appendToFile({ end: true, timestamp: endOfDay }, pathToTheFinishedFile);
-
-        const currentLogFilePath = dataUtils.getFullPathToCurrentLogFile();
-        const startOfDay = new Date().setUTCHours(0, 0, 0, 0);
-
-        if (!fs.existsSync(currentLogFilePath)) {
-            appendToFile({ begin: true, timestamp: startOfDay });
-            if (lastProgram.path) {
-                lastProgram.timestamp = startOfDay;
-                appendToFile(lastProgram);
-            }
-        }
-
-        setFinishTimeoutForCurrentLogFile();
-    }, endOfDay - Date.now() + 1);
-}
-
-setFinishTimeoutForCurrentLogFile();

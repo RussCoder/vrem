@@ -23,13 +23,15 @@
     "preuninstall": "node src/index.js stop",
     "postinstall": "node src/postinstall.js",
     "vrem": "node src/index.js",
-    "tracker": "node src/tracker.js",
+    "tracker": "node src/tracker.js --dev",
     "server": "nodemon src/server/server.js --watch src",
     "build": "node-gyp build"
   },
   "dependencies": {
-    "commander": "^6.1.0",
+    "better-sqlite3": "^7.1.2",
+    "commander": "^7.0.0",
     "express": "^4.17.1",
+    "fs-extra": "^9.1.0",
     "node-addon-api": "*"
   }
 }

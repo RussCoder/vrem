@@ -3,25 +3,32 @@
 const path = require('path');
 const dataUtils = require('./data_utils');
 const colors = require('./colors');
+const { makeDurationString, makeTimeStringWithDate } = require('./utils');
 
-async function formRawReportFromLogEntries(logEntries) {
+const autoLogTypes = dataUtils.autoLogTypes;
+
+function formRawProgramReportFromEntries(logEntries) {
     const report = {};
 
     let previousEntry = null;
 
-    for await (const entry of logEntries) {
+    for (const entry of logEntries) {
         if (!previousEntry) {
-            if (entry.path || entry.idle) previousEntry = entry;
+            if (entry.path || entry.type === autoLogTypes.idle) previousEntry = entry;
             continue;
         }
 
-        if (entry.begin) {
+        if (entry.type === autoLogTypes.begin) {
             previousEntry = null;
-        } else if (entry.end || entry.idle || entry.path !== previousEntry.path) {
+        } else if (
+            entry.type === autoLogTypes.end
+            || entry.type === autoLogTypes.idle
+            || entry.path !== previousEntry.path
+        ) {
             const time = entry.timestamp - previousEntry.timestamp;
 
             if (time > 0) { // just in case if the time on the machine was changed for some reason.
-                const path = previousEntry.idle ? 'idle' : previousEntry.path;
+                const path = (previousEntry.type === autoLogTypes.idle) ? 'idle' : previousEntry.path;
                 if (!report[path]) {
                     report[path] = {
                         time: time,
@@ -32,7 +39,7 @@ async function formRawReportFromLogEntries(logEntries) {
                 }
             }
 
-            if (entry.path || entry.idle) {
+            if (entry.path || entry.type === autoLogTypes.idle) {
                 previousEntry = entry;
             }
         } else {
@@ -41,15 +48,6 @@ async function formRawReportFromLogEntries(logEntries) {
     }
 
     return report;
-}
-
-function formTimeString(time) {
-    const hours = Math.floor(time / (60 * 60 * 1000));
-    time -= hours * 60 * 60 * 1000;
-    const minutes = Math.floor(time / 60 / 1000);
-    time -= minutes * 60 * 1000;
-    const secs = Math.floor(time / 1000);
-    return `${hours ? hours + 'h ' : ''}${minutes ? minutes + 'm ' : ''}${secs ? secs + 's' : ''}`;
 }
 
 function getExeNameByFilePath(filePath) {
@@ -130,17 +128,8 @@ function normalizeRawReport(report) {
 
 const dateToIsoDateString = date => new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
-function prettyPrintReport(normalizedReport, from, to) {
+function prettyPrintProgramReport(normalizedReport, from, to) {
     let result = '\n';
-
-    const fromDateString = dateToIsoDateString(from);
-    const toDateString = dateToIsoDateString(to);
-
-    if (fromDateString === toDateString) {
-        result += colors.cyan(`Report for the date ${fromDateString}\n\n`);
-    } else {
-        result += colors.cyan(`Report for the period from ${fromDateString} to ${toDateString}\n\n`);
-    }
 
     if (!normalizedReport.entries.length) {
         result += `${colors.yellow('There is no data for the requested period.')}\n`;
@@ -150,14 +139,14 @@ function prettyPrintReport(normalizedReport, from, to) {
     const totalActiveTime = normalizedReport.entries.reduce((sum, entry) => sum + entry.time, 0);
 
     for (const data of normalizedReport.entries) {
-        const timeString = formTimeString(data.time);
+        const timeString = makeDurationString(data.time);
         const percent = Math.round(data.time / totalActiveTime * 10000) / 100;
         result += `${(`(${percent}%) `.padEnd(9) + timeString).padEnd(20)} - ${colors.green(data.description)}\n`;
     }
 
-    result += `\n${colors.brightGreen('Total active time')}: ${formTimeString(totalActiveTime)}\n`;
-    result += `${colors.yellow('Idle time')}: ${formTimeString(normalizedReport.idleTime)}\n`;
-    result += `${colors.cyan('Total time')}: ${formTimeString(normalizedReport.idleTime + totalActiveTime)}\n`;
+    result += `\n${colors.brightGreen('Total active time')}: ${makeDurationString(totalActiveTime)}\n`;
+    result += `${colors.yellow('Idle time')}: ${makeDurationString(normalizedReport.idleTime)}\n`;
+    result += `${colors.cyan('Total time')}: ${makeDurationString(normalizedReport.idleTime + totalActiveTime)}\n`;
 
     console.info(result);
 }
@@ -183,14 +172,139 @@ function processDates(date, from, to) {
     return [from, to];
 }
 
-async function getReport(from, to) {
-    console.log(from, to);
-    const rawReport = await formRawReportFromLogEntries(dataUtils.getLogEntriesForDates(...processDates(null, from, to)));
+function _getProgramReport(from, to) {
+    const rawReport = formRawProgramReportFromEntries(dataUtils.getAutoLogEntriesForDates(from, to));
     return normalizeRawReport(rawReport);
 }
 
-async function reportCommand(date, { from, to }) {
-    prettyPrintReport(await getReport(...processDates(date, from, to)), from, to);
+function getReport(fromString, toString) {
+    return _getProgramReport(...processDates(null, fromString, toString));
+}
+
+function makeHeader(string = '*******') {
+    const decoration = '*'.repeat(string.length);
+    return `${decoration}\n${string.toUpperCase()}\n${decoration}`;
+}
+
+function getPeriodClause(fromDate, toDate) {
+    const fromDateString = dateToIsoDateString(fromDate);
+    const toDateString = dateToIsoDateString(toDate);
+    if (fromDateString === toDateString) {
+        return ` on the date ${fromDateString}`;
+    } else {
+        return ` in the period from ${fromDateString} to ${toDateString}`;
+    }
+}
+
+function getTaskReport(fromDate, toDate) {
+    const taskLogs = dataUtils.getManualLogEntriesForDates(fromDate, toDate);
+    const autoLogs = dataUtils.getAutoLogEntriesForDates(fromDate, toDate);
+
+    const unprocessedTasks = taskLogs.map(log => ({
+        ...log,
+        autoEntries: [{
+            type: autoLogTypes.begin,
+            timestamp: log.startTime
+        }]
+    }));
+    const processedTasks = [];
+
+    let previousEntry = null;
+    for (const autoEntry of autoLogs) {
+        const processedIndices = [];
+
+        for (let i = 0; i < unprocessedTasks.length; i++) {
+            const taskEntry = unprocessedTasks[i];
+            if (taskEntry.endTime < autoEntry.timestamp) {
+                if (autoEntry.type !== autoLogTypes.begin) {
+                    taskEntry.autoEntries.push({
+                        type: autoLogTypes.end,
+                        timestamp: taskEntry.endTime,
+                    });
+                }
+                processedIndices.push(i);
+                continue;
+            }
+
+            if (taskEntry.startTime <= autoEntry.timestamp) {
+                if (taskEntry.autoEntries.length === 1 && previousEntry) {
+                    taskEntry.autoEntries.push({
+                        ...previousEntry,
+                        timestamp: taskEntry.startTime,
+                    });
+                }
+                taskEntry.autoEntries.push(autoEntry);
+            }
+        }
+
+        processedIndices.forEach(index => {
+            const [task] = unprocessedTasks.splice(index, 1);
+            processedTasks.push(task);
+        });
+
+        if (autoEntry.type === autoLogTypes.program || autoEntry.type === autoLogTypes.idle) {
+            previousEntry = autoEntry;
+        } else {
+            previousEntry = null;
+        }
+    }
+
+    processedTasks.push(...unprocessedTasks); // in case if there is a current task
+
+    const tasks = processedTasks.reduce((obj, entry) => {
+        if (obj[entry.name]) {
+            obj[entry.name].autoEntries.push(...entry.autoEntries);
+            obj[entry.name].time += entry.endTime - entry.startTime;
+            obj[entry.name].endTime = entry.endTime;
+            obj[entry.name].current = entry.current;
+        } else {
+            obj[entry.name] = {
+                //taskEntries: [entry],
+                name: entry.name,
+                time: entry.endTime - entry.startTime,
+                autoEntries: [...entry.autoEntries],
+                startTime: entry.startTime,
+                endTime: entry.endTime,
+                current: entry.current,
+            }
+        }
+        return obj;
+    }, {});
+
+    return Object.values(tasks).sort((a, b) => -a.time + b.time);
+}
+
+function prettyPrintTaskReport(taskReport) {
+    for (const task of taskReport) {
+        console.info(colors.cyan(
+            `Task "${colors.brightGreen(task.name)}" took ${colors.white(makeDurationString(task.time))}\n`
+            + `Began: ${colors.white(makeTimeStringWithDate(new Date(task.startTime)))}\n`
+            + (task.current ?
+                `And is running. Current time: ${colors.white(makeTimeStringWithDate(new Date()))}` :
+                `Ended: ${colors.white(makeTimeStringWithDate(new Date(task.endTime)))}`
+            )
+            + `\nThe programs used within this task:`));
+
+        const rawReport = formRawProgramReportFromEntries(task.autoEntries);
+        const report = normalizeRawReport(rawReport);
+        prettyPrintProgramReport(report);
+        console.info('-'.repeat(25) + '\n');
+    }
+}
+
+function reportCommand(date, { from, to }) {
+    const [fromDate, toDate] = processDates(date, from, to);
+    const periodClause = getPeriodClause(fromDate, toDate);
+
+    console.info(colors.cyan(makeHeader('GENERAL REPORT ON USED PROGRAMS' + periodClause)));
+    prettyPrintProgramReport(_getProgramReport(fromDate, toDate), fromDate, toDate);
+
+    const taskReport = getTaskReport(fromDate, toDate);
+
+    if (taskReport.length) {
+        console.info(colors.cyan(makeHeader('REPORTS FOR EACH TASK' + periodClause) + '\n'));
+        prettyPrintTaskReport(taskReport);
+    }
 }
 
 module.exports = {
