@@ -1,12 +1,5 @@
-<template>
-    <h2>Log list</h2>
-    <ul>
-        <LogEntry v-for="(item, i) in logEntries" :key="i" :entry="item" />
-    </ul>
-</template>
-
 <script>
-import LogEntry from './LogEntry.vue';
+import ProgramLogEntry from './ProgramLogEntry.vue';
 import { rpc } from '@/api';
 
 export default {
@@ -20,7 +13,14 @@ export default {
         this.logEntries.reverse();
     },
     components: {
-        LogEntry,
+        ProgramLogEntry,
     },
 }
 </script>
+
+<template>
+    <h2>Log list</h2>
+    <ul>
+        <ProgramLogEntry v-for="(item, i) in logEntries" :key="i" :entry="item" />
+    </ul>
+</template>

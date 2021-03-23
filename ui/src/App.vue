@@ -1,13 +1,18 @@
 <script>
+import CurrentTask from "@/components/CurrentTask";
+
 export default {
     name: "App",
+    components: { CurrentTask },
 };
 </script>
 
 <template>
     <div class="header">
         <span class="logo">Vrem</span>
-        <RouterLink class="nav_button" to="/">Log</RouterLink>
+        <CurrentTask />
+        <RouterLink class="nav_button" to="/">Task Logs</RouterLink>
+        <RouterLink class="nav_button" to="/program-logs">Program Logs</RouterLink>
         <RouterLink class="nav_button" to="/report">Report</RouterLink>
     </div>
     <div class="content">
@@ -44,7 +49,7 @@ export default {
     }
 
     .content {
-        font-size: 1.6rem;
+        font-size: 16px;
         padding: 2rem;
     }
 </style>
@@ -55,5 +60,6 @@ export default {
         padding: 0;
         margin: 0;
         font-size: 10px;
+        font-family: Arial, sans-serif;
     }
 </style>

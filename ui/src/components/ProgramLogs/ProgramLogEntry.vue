@@ -1,10 +1,3 @@
-<template>
-    <div class="log_entry">
-        <div class="time">{{ formattedDate }}</div>
-        <div class="description">{{ text }}</div>
-    </div>
-</template>
-
 <script>
 export default {
     props: {
@@ -29,14 +22,21 @@ export default {
 };
 </script>
 
+<template>
+    <div class="log_entry">
+        <div class="time">{{ formattedDate }}</div>
+        <div class="description">{{ text }}</div>
+    </div>
+</template>
+
 <style scoped>
     .log_entry {
         margin: 1em 0;
-        border-bottom: 1px solid gray;
         display: flex;
     }
 
     .time {
         margin-right: 1em;
+        color: brown;
     }
 </style>

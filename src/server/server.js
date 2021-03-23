@@ -14,7 +14,7 @@ app.post('/api/jsonrpc2', express.json(), async (req, res) => {
         if (!apiMethods[data.method]) {
             throw new Error("Ошибка: запрошен несуществующий метод API");
         }
-        let result = await apiMethods[data.method](...data.params, req);
+        let result = await apiMethods[data.method](...data.params);
 
         return res.send({
             id: data.id,

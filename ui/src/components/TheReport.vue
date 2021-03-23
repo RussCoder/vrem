@@ -46,11 +46,11 @@ export default {
     <div>
         <h2>The Report</h2>
         <form @submit.prevent="formReport">
-            <div class="date">
+            <div class="time">
                 <span>Start date:</span>
                 <input v-model="startDate" type="date" />
             </div>
-            <div class="date">
+            <div class="time">
                 <span>End date:</span>
                 <input v-model="endDate" type="date" />
             </div>
@@ -84,7 +84,7 @@ export default {
 </template>
 
 <style lang="scss" scoped>
-    .date {
+    .time {
         margin: 1em;
 
         span {
