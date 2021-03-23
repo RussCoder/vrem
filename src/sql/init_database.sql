@@ -23,13 +23,13 @@ CREATE TABLE "CurrentTask" (
 	"startTime" INTEGER NOT NULL
 );
 
-CREATE TABLE "ManualLogs" (
+CREATE TABLE "TaskLogs" (
 	"id" INTEGER PRIMARY KEY,
 	"taskId" INTEGER NOT NULL REFERENCES Tasks(id),
 	"startTime" INTEGER NOT NULL,
 	"endTime" INTEGER NOT NULL
 );
-CREATE INDEX startTime ON ManualLogs(startTime);
+CREATE INDEX startTime ON TaskLogs(startTime);
 
 CREATE TABLE Programs (
 	"id" INTEGER PRIMARY KEY,
@@ -38,19 +38,19 @@ CREATE TABLE Programs (
 );
 CREATE INDEX path ON Programs(path);
 
-CREATE TABLE AutoLogTypes (
+CREATE TABLE ProgramLogTypes (
 	"id" INTEGER PRIMARY KEY,
     "type" TEXT NOT NULL
 );
-INSERT INTO AutoLogTypes (id, type) VALUES
+INSERT INTO ProgramLogTypes (id, type) VALUES
     (0, "program"),
     (1, "begin"),
     (2, "end"),
     (3, "idle");
 
-CREATE TABLE AutoLogs (
+CREATE TABLE ProgramLogs (
 	"timestamp" INTEGER PRIMARY KEY,
-	"type" INTEGER NOT NULL DEFAULT 0 REFERENCES AutoLogTypes(id),
+	"type" INTEGER NOT NULL DEFAULT 0 REFERENCES ProgramLogTypes(id),
 	"programId" INTEGER REFERENCES Programs(id)
 );
 

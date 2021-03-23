@@ -72,13 +72,13 @@ async function* getLogEntriesForDates(from = getTodayStart(), to = getTodayEnd()
     }
 }
 
-function getManualLogEntriesForDates(from = getTodayStart(), to = new Date()) {
+function getTaskLogEntriesForDates(from = getTodayStart(), to = new Date()) {
     const limits = { from: from.valueOf(), to: to.valueOf() };
 
     const finished = db.prepare(`
         SELECT name, startTime, 
         CASE WHEN endTime > :to THEN :to ELSE endTime END AS endTime 
-        FROM ManualLogs JOIN Tasks ON taskId = Tasks.id
+        FROM TaskLogs JOIN Tasks ON taskId = Tasks.id
         WHERE startTime >= :from AND startTime <= :to;
     `).all(limits);
 
@@ -93,23 +93,23 @@ function getManualLogEntriesForDates(from = getTodayStart(), to = new Date()) {
     return finished;
 }
 
-function getAutoLogEntriesForDates(from = getTodayStart(), to = new Date()) {
+function getProgramLogEntriesForDates(from = getTodayStart(), to = new Date()) {
     return db.prepare(`
         SELECT timestamp, path, description, type 
-        FROM AutoLogs LEFT JOIN Programs ON programId = Programs.id 
+        FROM ProgramLogs LEFT JOIN Programs ON programId = Programs.id 
         WHERE timestamp >= ? AND timestamp <= ? 
         ORDER BY timestamp ASC;
     `).all(from.valueOf(), to.valueOf());
 }
 
-const autoLogTypes = Object.freeze(JSON.parse(
-    db.prepare('SELECT json_group_object(type, id) FROM AutoLogTypes;').pluck().get()
+const programLogTypes = Object.freeze(JSON.parse(
+    db.prepare('SELECT json_group_object(type, id) FROM ProgramLogTypes;').pluck().get()
 ));
 
 module.exports = {
-    getAutoLogEntriesForDates,
-    getManualLogEntriesForDates,
-    autoLogTypes,
+    getProgramLogEntriesForDates,
+    getTaskLogEntriesForDates,
+    programLogTypes,
     appFolder,
     mainFolder,
     manualTimeLogsFolder,

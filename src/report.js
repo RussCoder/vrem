@@ -5,7 +5,7 @@ const dataUtils = require('./data_utils');
 const colors = require('./colors');
 const { makeDurationString, makeTimeStringWithDate } = require('./utils');
 
-const autoLogTypes = dataUtils.autoLogTypes;
+const programLogTypes = dataUtils.programLogTypes;
 
 function formRawProgramReportFromEntries(logEntries) {
     const report = {};
@@ -14,21 +14,21 @@ function formRawProgramReportFromEntries(logEntries) {
 
     for (const entry of logEntries) {
         if (!previousEntry) {
-            if (entry.path || entry.type === autoLogTypes.idle) previousEntry = entry;
+            if (entry.path || entry.type === programLogTypes.idle) previousEntry = entry;
             continue;
         }
 
-        if (entry.type === autoLogTypes.begin) {
+        if (entry.type === programLogTypes.begin) {
             previousEntry = null;
         } else if (
-            entry.type === autoLogTypes.end
-            || entry.type === autoLogTypes.idle
+            entry.type === programLogTypes.end
+            || entry.type === programLogTypes.idle
             || entry.path !== previousEntry.path
         ) {
             const time = entry.timestamp - previousEntry.timestamp;
 
             if (time > 0) { // just in case if the time on the machine was changed for some reason.
-                const path = (previousEntry.type === autoLogTypes.idle) ? 'idle' : previousEntry.path;
+                const path = (previousEntry.type === programLogTypes.idle) ? 'idle' : previousEntry.path;
                 if (!report[path]) {
                     report[path] = {
                         time: time,
@@ -39,7 +39,7 @@ function formRawProgramReportFromEntries(logEntries) {
                 }
             }
 
-            if (entry.path || entry.type === autoLogTypes.idle) {
+            if (entry.path || entry.type === programLogTypes.idle) {
                 previousEntry = entry;
             }
         } else {
@@ -173,7 +173,7 @@ function processDates(date, from, to) {
 }
 
 function _getProgramReport(from, to) {
-    const rawReport = formRawProgramReportFromEntries(dataUtils.getAutoLogEntriesForDates(from, to));
+    const rawReport = formRawProgramReportFromEntries(dataUtils.getProgramLogEntriesForDates(from, to));
     return normalizeRawReport(rawReport);
 }
 
@@ -197,28 +197,28 @@ function getPeriodClause(fromDate, toDate) {
 }
 
 function getTaskReport(fromDate, toDate) {
-    const taskLogs = dataUtils.getManualLogEntriesForDates(fromDate, toDate);
-    const autoLogs = dataUtils.getAutoLogEntriesForDates(fromDate, toDate);
+    const taskLogs = dataUtils.getTaskLogEntriesForDates(fromDate, toDate);
+    const programLogs = dataUtils.getProgramLogEntriesForDates(fromDate, toDate);
 
     const unprocessedTasks = taskLogs.map(log => ({
         ...log,
         autoEntries: [{
-            type: autoLogTypes.begin,
+            type: programLogTypes.begin,
             timestamp: log.startTime
         }]
     }));
     const processedTasks = [];
 
     let previousEntry = null;
-    for (const autoEntry of autoLogs) {
+    for (const logEntry of programLogs) {
         const processedIndices = [];
 
         for (let i = 0; i < unprocessedTasks.length; i++) {
             const taskEntry = unprocessedTasks[i];
-            if (taskEntry.endTime < autoEntry.timestamp) {
-                if (autoEntry.type !== autoLogTypes.begin) {
+            if (taskEntry.endTime < logEntry.timestamp) {
+                if (logEntry.type !== programLogTypes.begin) {
                     taskEntry.autoEntries.push({
-                        type: autoLogTypes.end,
+                        type: programLogTypes.end,
                         timestamp: taskEntry.endTime,
                     });
                 }
@@ -226,14 +226,14 @@ function getTaskReport(fromDate, toDate) {
                 continue;
             }
 
-            if (taskEntry.startTime <= autoEntry.timestamp) {
+            if (taskEntry.startTime <= logEntry.timestamp) {
                 if (taskEntry.autoEntries.length === 1 && previousEntry) {
                     taskEntry.autoEntries.push({
                         ...previousEntry,
                         timestamp: taskEntry.startTime,
                     });
                 }
-                taskEntry.autoEntries.push(autoEntry);
+                taskEntry.autoEntries.push(logEntry);
             }
         }
 
@@ -242,8 +242,8 @@ function getTaskReport(fromDate, toDate) {
             processedTasks.push(task);
         });
 
-        if (autoEntry.type === autoLogTypes.program || autoEntry.type === autoLogTypes.idle) {
-            previousEntry = autoEntry;
+        if (logEntry.type === programLogTypes.program || logEntry.type === programLogTypes.idle) {
+            previousEntry = logEntry;
         } else {
             previousEntry = null;
         }

@@ -10,14 +10,8 @@ const db = require('./db');
 const dev = process.argv[2] === '--dev';
 
 const logTypes = Object.freeze(JSON.parse(
-    db.prepare('SELECT json_group_object(type, id) FROM AutoLogTypes;').pluck().get()
+    db.prepare('SELECT json_group_object(type, id) FROM ProgramLogTypes;').pluck().get()
 ));
-
-process.on('uncaughtException', e => {
-    dev && console.error(e);
-    fs.appendFileSync(dataUtils.mainFolder + '/tracker_errors.log', e.stack, 'utf8');
-    process.exit(1);
-});
 
 // The server is needed only to detect is the tracking process alive or not from the cli
 function createServer() {
@@ -80,7 +74,7 @@ function addToLogs(data) {
             programId = info.lastInsertRowid;
         }
 
-        db.prepare('INSERT INTO AutoLogs (timestamp, type, programId) VALUES (?, ?, ?);')
+        db.prepare('INSERT INTO ProgramLogs (timestamp, type, programId) VALUES (?, ?, ?);')
             .run(timestamp, type, programId);
     })();
 }
@@ -91,14 +85,13 @@ function addToLogs(data) {
     const exit = () => process.exit();
     process.on('SIGINT', exit);
     process.on('SIGTERM', exit);
-    process.on('uncaughtException', e => {
-        console.log(e);
-        exit();
-    });
-    process.on('unhandledRejection', e => {
-        console.log(e);
-        exit();
-    });
+    const exceptionHandler = e => {
+        dev && console.error(e);
+        fs.appendFileSync(dataUtils.mainFolder + '/tracker_errors.log', e.stack, 'utf8');
+        process.exit(1);
+    };
+    process.on('uncaughtException', exceptionHandler);
+    process.on('unhandledRejection', exceptionHandler);
 
     createServer();
 

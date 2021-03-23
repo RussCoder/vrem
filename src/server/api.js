@@ -6,7 +6,7 @@ const manualTask = require('../manualTask');
 
 module.exports = {
     getLogEntries() {
-        return dataUtils.getAutoLogEntriesForDates();
+        return dataUtils.getProgramLogEntriesForDates();
     },
 
     getReport(from, to) {

@@ -20,7 +20,7 @@ function stopCurrentTask(currentTask = getCurrentTask()) {
 
     try {
         db.exec('SAVEPOINT stop_current_task;')
-        db.prepare('INSERT INTO ManualLogs (taskId, startTime, endTime) VALUES (?, ?, ?);')
+        db.prepare('INSERT INTO TaskLogs (taskId, startTime, endTime) VALUES (?, ?, ?);')
             .run(currentTask.id, currentTask.startTime, Date.now());
         db.prepare('DELETE FROM CurrentTask;').run();
         db.exec('RELEASE stop_current_task;');
@@ -86,7 +86,7 @@ function startTask(name) {
 function getTaskLogs(limit = 100, offset = 0) {
     return db.prepare(`
         SELECT logs.id, Tasks.name as taskName, startTime, endTime
-        FROM ManualLogs logs JOIN Tasks ON Tasks.id = logs.taskId
+        FROM TaskLogs logs JOIN Tasks ON Tasks.id = logs.taskId
         ORDER BY startTime DESC
         LIMIT ? OFFSET ?;
     `).all(limit, offset);
