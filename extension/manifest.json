@@ -1,0 +1,19 @@
+{
+  "manifest_version": 2,
+  "name": "Vrem",
+  "short_name": "Vrem",
+  "version": "0.0.0.0",
+  "author": "RussCoder",
+  "homepage_url": "https://github.com/RussCoder/vrem",
+  "description": "Tracks the current tab and sends the URL to the Vrem's local process.",
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
+  "content_security_policy": "script-src 'self'; object-src 'self';",
+  "permissions": [
+    "<all_urls>",
+    "tabs"
+  ]
+}

@@ -34,9 +34,10 @@ CREATE INDEX startTime ON TaskLogs(startTime);
 CREATE TABLE Programs (
 	"id" INTEGER PRIMARY KEY,
 	"path" TEXT NOT NULL,
-	"description" TEXT NOT NULL DEFAULT ""
+	"description" TEXT NOT NULL DEFAULT "",
+	"parentId" INTEGER DEFAULT NULL REFERENCES Programs(id)
 );
-CREATE INDEX path ON Programs(path);
+CREATE UNIQUE INDEX Programs_path ON Programs(path);
 
 CREATE TABLE ProgramLogTypes (
 	"id" INTEGER PRIMARY KEY,

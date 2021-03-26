@@ -19,8 +19,14 @@ function createServer() {
         client.on('end', () => { });
         client.setEncoding('utf8');
 
-        client.on('data', data => {
-            switch (data) {
+        client.on('data', json => {
+            const obj = JSON.parse(json);
+            switch (obj.command) {
+                case 'subprogram':
+                    main(obj.payload);
+                    client.write('ok');
+                    break;
+
                 case 'ping':
                     client.write(JSON.stringify({
                         version: version,
@@ -48,6 +54,8 @@ function createServer() {
 }
 
 function addToLogs(data) {
+    dev && console.log('add to logs', data);
+
     const timestamp = Date.now();
     let type = logTypes.program,
         description = data.description || "",
@@ -62,16 +70,25 @@ function addToLogs(data) {
     }
 
     let programId = null;
+    let parentId = null;
     if (type === logTypes.program) {
         if (!path) return;
-        programId = db.prepare('SELECT id FROM Programs WHERE path = ?;').pluck().get(path);
+        const query = db.prepare('SELECT id FROM Programs WHERE path = ?;').pluck();
+        programId = query.get(path);
+        if (data.parent) {
+            parentId = query.get(data.parent.path);
+        }
     }
 
     db.transaction(() => {
         if (!programId && type === logTypes.program) {
-            const info = db.prepare('INSERT INTO Programs (path, description) VALUES (?, ?);')
-                .run(path, description);
-            programId = info.lastInsertRowid;
+            const query = db.prepare('INSERT INTO Programs (path, description, parentId) VALUES (?, ?, ?);');
+
+            if (data.parent && !parentId) {
+                parentId = query.run(data.parent.path, data.parent.description, null).lastInsertRowid;
+            }
+
+            programId = query.run(path, description, parentId).lastInsertRowid;
         }
 
         db.prepare('INSERT INTO ProgramLogs (timestamp, type, programId) VALUES (?, ?, ?);')
@@ -106,10 +123,17 @@ function addToLogs(data) {
 // The core code of the tracker process
 
 let lastProgram = {};
+let lastSubprogramTimestamp = null;
+// deferredProgram can be only a browser. If the user switches to another program,
+// the tracker forgets the subprogram at once. deferredProgram makes sense when the extension is disabled,
+// but the browser remains in focus.
+let deferredProgram = null;
 let isIdle = false;
 const IDLE_THRESHOLD = 90000;
+const SUBPROGRAM_TIMEOUT = 2000;
+const MAIN_INTERVAL = 1000;
 
-setInterval(() => {
+function main(subprogram = null) {
     const idleTime = getIdleTime();
     dev && console.log('Idle time = ', getIdleTime());
 
@@ -126,14 +150,54 @@ setInterval(() => {
     }
 
     const activeProgram = getActiveProgram();
-    dev && console.log(activeProgram);
 
     if (!activeProgram || activeProgram.error) return;
 
     activeProgram.timestamp = Date.now();
 
-    if (lastProgram.path !== activeProgram.path) {
-        addToLogs(activeProgram);
-        lastProgram = activeProgram;
+    function processProgram(program) {
+        if (lastProgram.path !== program.path || Boolean(lastProgram.parent) !== Boolean(program.parent)) {
+            addToLogs(program);
+            lastProgram = program;
+        }
     }
-}, 1000);
+
+    if (subprogram) { // when request came from the browser extension
+        subprogram.description = '';
+        subprogram.parent = activeProgram;
+        lastSubprogramTimestamp = subprogram.timestamp;
+
+        if (
+            !subprogram.path // extension send the last message with null values, when there is no focused website.
+            // When subprogram changed  parent.path it can be that there are two browsers,
+            // but also that the user has switch to another program. We assume the latter here.
+            || (lastProgram.parent && lastProgram.path === subprogram.path && lastProgram.parent.path !== subprogram.parent.path)
+        ) {
+            dev && console.log('Turn off subprogram mode', subprogram);
+            lastSubprogramTimestamp = null;
+        } else {
+            if (activeProgram.timestamp - subprogram.timestamp < 100) {
+                //dev && console.log('timestamp diff', activeProgram.timestamp - subprogram.timestamp);
+                processProgram(subprogram);
+                deferredProgram = null;
+            }
+            return;
+        }
+    }
+
+    if (lastProgram.parent && lastSubprogramTimestamp) { // usual iteration
+        if ((Date.now() - lastSubprogramTimestamp > SUBPROGRAM_TIMEOUT) || lastProgram.parent.path !== activeProgram.path) {
+            dev && console.log(`Switch to usual mode ${Date.now() - lastSubprogramTimestamp > SUBPROGRAM_TIMEOUT
+                ? ' due to timeout' : 'due to program change.'}` + 'The deferred: ', deferredProgram);
+            deferredProgram && processProgram(deferredProgram);
+            deferredProgram = null;
+        } else {
+            deferredProgram = deferredProgram || activeProgram; // we should preserve the oldest timestamp
+            return;
+        }
+    }
+
+    processProgram(activeProgram);
+}
+
+setInterval(main, MAIN_INTERVAL);

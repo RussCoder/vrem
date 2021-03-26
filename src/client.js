@@ -18,7 +18,7 @@ const net = require('net');
 //     }, 3000);
 // });
 
-function request(socketPath, data) {
+function request(socketPath, command, payload = null) {
     return new Promise(((resolve, reject) => {
         try {
             const socket = net.createConnection(socketPath, () => {
@@ -29,7 +29,7 @@ function request(socketPath, data) {
                     socket.destroy();
                 });
 
-                socket.write(data);
+                socket.write(JSON.stringify({ command, payload }));
             });
 
             socket.once('error', e => {
