@@ -3,12 +3,18 @@
 const express = require('express');
 const path = require('path');
 const apiMethods = require('./api');
-const { request } = require('../client');
 const constants = require('../constants');
+const { IpcServer } = require('../ipc');
+
+(function () {
+    new IpcServer().listen(constants.serverSocketPath, () => {
+        console.info("Vrem's server process is listening on socket ", constants.serverSocketPath);
+    });
+})();
 
 const app = express();
 
-app.use(express.static(path.resolve(__dirname, '../ui/dist')));
+app.use(express.static(path.resolve(__dirname, '../../ui/dist')));
 
 app.post('/api/jsonrpc2', express.json(), async (req, res) => {
     const data = req.body;
@@ -31,13 +37,20 @@ app.post('/api/jsonrpc2', express.json(), async (req, res) => {
     }
 });
 
-app.post('/extension', express.json(), async (req, res) => {
-    //console.log("Extension sent", req.body);
-    const response = await request(constants.autoTrackerSocketPath, 'subprogram', req.body);
-    res.end(response);
+// app.post('/extension', express.json(), async (req, res) => {
+//     //console.log("Extension sent", req.body);
+//     const response = await ipcRequest(constants.autoTrackerSocketPath, 'subprogram', req.body);
+//     res.send(response);
+// });
+
+app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../../ui/dist/index.html'));
+});
+
+app.use((req, res) => {
+    res.sendStatus(404);
 });
 
 app.listen(3210, () => {
     console.log('Server is listening on port 3210');
 });
-

@@ -50,8 +50,11 @@ function formRawProgramReportFromEntries(logEntries) {
     return report;
 }
 
-function getExeNameByFilePath(filePath) {
-    const parsed = path.parse(filePath);
+function getDescriptionByPath(programPath) {
+    if (/^http/.test(programPath)) {
+        return programPath;
+    }
+    const parsed = path.parse(programPath);
     return parsed.name + parsed.ext;
 }
 
@@ -67,7 +70,7 @@ function normalizeRawReport(report) {
     const byDescription = {};
 
     for (const [filePath, data] of Object.entries(report)) {
-        const key = data.description || getExeNameByFilePath(filePath);
+        const key = data.description || getDescriptionByPath(filePath);
         const entry = { ...data, description: key, path: filePath };
 
         if (byDescription[key]) {
@@ -84,7 +87,7 @@ function normalizeRawReport(report) {
             const byExeName = {};
 
             for (const entry of array) {
-                const exeName = getExeNameByFilePath(entry.path);
+                const exeName = getDescriptionByPath(entry.path);
                 if (byExeName[exeName]) {
                     byExeName[exeName].push(entry);
                 } else {

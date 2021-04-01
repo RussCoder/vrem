@@ -29,7 +29,13 @@ function makeDurationString(ms) {
     return `${hours ? hours + 'h ' : ''}${minutes ? minutes + 'm ' : ''}${secs ? secs + 's' : ''}` || '0s';
 }
 
+function openUrl(url) {
+    const command = (process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open');
+    require('child_process').exec(command + ' ' + url);
+}
+
 module.exports = {
     makeDurationString,
     makeTimeStringWithDate,
+    openUrl,
 };

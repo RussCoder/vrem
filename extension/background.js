@@ -5,7 +5,7 @@ let currentUrl = null;
 
 async function sendData() {
     try {
-        await fetch('http://localhost:3210/extension', {
+        await fetch('http://localhost:3211', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

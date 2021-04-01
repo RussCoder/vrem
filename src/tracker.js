@@ -1,53 +1,51 @@
 'use strict';
 
-const net = require('net');
-const { version } = require('../package.json');
+const { IpcServer } = require('./ipc');
 const constants = require('./constants');
 const { getActiveProgram, getIdleTime } = require('../build/Release/vrem_windows.node');
 const fs = require('fs');
 const dataUtils = require('./data_utils');
 const db = require('./db');
+const http = require('http');
 const dev = process.argv[2] === '--dev';
+const PORT = 3211;
 
 const logTypes = Object.freeze(JSON.parse(
     db.prepare('SELECT json_group_object(type, id) FROM ProgramLogTypes;').pluck().get()
 ));
 
-// The server is needed only to detect is the tracking process alive or not from the cli
-function createServer() {
-    const server = net.createServer((client) => {
-        client.on('end', () => { });
-        client.setEncoding('utf8');
+function startHttpServer() {
+    const server = http.createServer(async (req, res) => {
+        try {
+            if (req.url === '/' && req.method === 'POST' && req.headers["content-type"] === 'application/json') {
+                const chunks = [];
+                for await (const chunk of req) chunks.push(chunk);
+                if (!req.complete) return;
 
-        client.on('data', json => {
-            const obj = JSON.parse(json);
-            switch (obj.command) {
-                case 'subprogram':
-                    main(obj.payload);
-                    client.write('ok');
-                    break;
-
-                case 'ping':
-                    client.write(JSON.stringify({
-                        version: version,
-                        name: "vrem",
-                    }));
-                    break;
-
-                case 'exit':
-                    client.write('true', () => process.exit());
-                    break;
-
-                default:
-                    client.write("Vrem's tracking process cannot identify the request!");
+                const string = Buffer.concat(chunks).toString('utf8');
+                const data = JSON.parse(string);
+                main(data);
             }
-        });
+            res.writeHead(200).end();
+        } catch (e) {
+            try {
+                res.writeHead(500).end()
+            } catch (e) { }
+            dev && console.error(e);
+        }
     });
 
-    server.on('error', (err) => {
-        throw err;
+    server.listen(PORT, () => {
+        console.info("Vrem's tracking process is listening on port ", PORT);
     });
+}
 
+function startIpcServer() {
+    const server = new IpcServer();
+    // server.command('subprogram', payload => {
+    //     main(payload);
+    //     return true;
+    // });
     server.listen(constants.autoTrackerSocketPath, () => {
         console.info("Vrem's tracking process is listening on socket ", constants.autoTrackerSocketPath);
     });
@@ -110,7 +108,8 @@ function addToLogs(data) {
     process.on('uncaughtException', exceptionHandler);
     process.on('unhandledRejection', exceptionHandler);
 
-    createServer();
+    startIpcServer();
+    startHttpServer();
 
     addToLogs({ begin: true, timestamp: Date.now() });
 
