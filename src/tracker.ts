@@ -1,4 +1,5 @@
-'use strict';
+import { IncomingMessage, ServerResponse } from "http";
+import { isSubprogram, LogEntry, Program, Subprogram, SubprogramJson } from "./tracker_types";
 
 const { IpcServer } = require('./ipc');
 const constants = require('./constants');
@@ -15,15 +16,15 @@ const logTypes = Object.freeze(JSON.parse(
 ));
 
 function startHttpServer() {
-    const server = http.createServer(async (req, res) => {
+    const server = http.createServer(async (req: IncomingMessage, res: ServerResponse) => {
         try {
             if (req.url === '/' && req.method === 'POST' && req.headers["content-type"] === 'application/json') {
-                const chunks = [];
+                const chunks: Array<Buffer> = [];
                 for await (const chunk of req) chunks.push(chunk);
                 if (!req.complete) return;
 
                 const string = Buffer.concat(chunks).toString('utf8');
-                const data = JSON.parse(string);
+                const data: SubprogramJson = JSON.parse(string);
                 main(data);
             }
             res.writeHead(200).end();
@@ -51,7 +52,7 @@ function startIpcServer() {
     });
 }
 
-function addToLogs(data) {
+function addToLogs(data: LogEntry) {
     dev && console.log('add to logs', data);
 
     const timestamp = Date.now();
@@ -121,18 +122,20 @@ function addToLogs(data) {
 
 // The core code of the tracker process
 
-let lastProgram = {};
-let lastSubprogramTimestamp = null;
+type ProgramValue = Program | Subprogram | null;
+
+let lastProgram: ProgramValue = null;
+let lastSubprogramTimestamp: number | null = null;
 // deferredProgram can be only a browser. If the user switches to another program,
 // the tracker forgets the subprogram at once. deferredProgram makes sense when the extension is disabled,
 // but the browser remains in focus.
-let deferredProgram = null;
+let deferredProgram: ProgramValue = null;
 let isIdle = false;
 const IDLE_THRESHOLD = 90000;
 const SUBPROGRAM_TIMEOUT = 2000;
 const MAIN_INTERVAL = 1000;
 
-function main(subprogram = null) {
+function main(subprogramData: SubprogramJson | null = null) {
     const idleTime = getIdleTime();
     dev && console.log('Idle time = ', getIdleTime());
 
@@ -140,7 +143,7 @@ function main(subprogram = null) {
         if (!isIdle) {
             addToLogs({ idle: true, timestamp: Date.now() });
             isIdle = true;
-            lastProgram = {};
+            lastProgram = null;
         }
 
         return;
@@ -154,23 +157,22 @@ function main(subprogram = null) {
 
     activeProgram.timestamp = Date.now();
 
-    function processProgram(program) {
-        if (lastProgram.path !== program.path || Boolean(lastProgram.parent) !== Boolean(program.parent)) {
+    function processProgram(program: Program | Subprogram) {
+        if (lastProgram && lastProgram.path !== program.path || isSubprogram(lastProgram) !== isSubprogram(program)) {
             addToLogs(program);
             lastProgram = program;
         }
     }
 
-    if (subprogram) { // when request came from the browser extension
-        subprogram.description = '';
-        subprogram.parent = activeProgram;
-        lastSubprogramTimestamp = subprogram.timestamp;
+    if (subprogramData) { // when request came from the browser extension
+        const subprogram: Subprogram = { ...subprogramData, description: '', parent: activeProgram };
+        lastSubprogramTimestamp = subprogramData.timestamp;
 
         if (
             !subprogram.path // extension send the last message with null values, when there is no focused website.
             // When subprogram changed  parent.path it can be that there are two browsers,
             // but also that the user has switch to another program. We assume the latter here.
-            || (lastProgram.parent && lastProgram.path === subprogram.path && lastProgram.parent.path !== subprogram.parent.path)
+            || (isSubprogram(lastProgram) && lastProgram.path === subprogram.path && lastProgram.parent.path !== subprogram.parent.path)
         ) {
             dev && console.log('Turn off subprogram mode', subprogram);
             lastSubprogramTimestamp = null;
@@ -184,7 +186,7 @@ function main(subprogram = null) {
         }
     }
 
-    if (lastProgram.parent && lastSubprogramTimestamp) { // usual iteration
+    if (isSubprogram(lastProgram) && lastSubprogramTimestamp) { // usual iteration
         if ((Date.now() - lastSubprogramTimestamp > SUBPROGRAM_TIMEOUT) || lastProgram.parent.path !== activeProgram.path) {
             dev && console.log(`Switch to usual mode ${Date.now() - lastSubprogramTimestamp > SUBPROGRAM_TIMEOUT
                 ? ' due to timeout' : 'due to program change.'}` + 'The deferred: ', deferredProgram);

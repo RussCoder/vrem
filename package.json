@@ -17,14 +17,15 @@
     "win32"
   ],
   "bin": {
-    "vrem": "src/index.js"
+    "vrem": "dist/index.js"
   },
   "scripts": {
-    "preuninstall": "node src/index.js stop",
-    "postinstall": "node src/postinstall.js",
-    "vrem": "node src/index.js",
-    "tracker": "node src/tracker.js --dev",
+    "preuninstall": "node dist/index.js off",
+    "postinstall": "tsc && node dist/postinstall.js",
+    "vrem": "node dist/index.js",
+    "tracker": "node dist/tracker.js --dev",
     "server": "nodemon src/server/server.js --watch src",
+    "tsc": "tsc",
     "build": "node-gyp build"
   },
   "dependencies": {
@@ -33,5 +34,10 @@
     "express": "^4.17.1",
     "fs-extra": "^9.1.0",
     "node-addon-api": "*"
+  },
+  "devDependencies": {
+    "@tsconfig/node12": "^1.0.7",
+    "@types/node": "^14.14.37",
+    "typescript": "^4.2.3"
   }
 }

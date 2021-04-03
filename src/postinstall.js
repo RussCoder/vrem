@@ -7,7 +7,7 @@ const { appFolder, autoTimeLogsFolder, mainFolder } = require('./data_utils');
 
 console.info(colors.yellow(`
 Note that the auto-tracking process is stopped.
-Run "${colors.green('vrem start')}" to launch it.
+Run "${colors.green('vrem on')}" to launch it.
 `));
 
 function migrate0() {
