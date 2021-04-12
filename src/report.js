@@ -3,7 +3,7 @@
 const path = require('path');
 const dataUtils = require('./data_utils');
 const colors = require('./colors');
-const { makeDurationString, makeTimeStringWithDate } = require('./utils');
+const { makeDurationString, makeTimeStringWithDate, getDescriptionByPath } = require('./utils');
 
 const programLogTypes = dataUtils.programLogTypes;
 
@@ -48,14 +48,6 @@ function formRawProgramReportFromEntries(logEntries) {
     }
 
     return report;
-}
-
-function getDescriptionByPath(programPath) {
-    if (/^http/.test(programPath)) {
-        return programPath;
-    }
-    const parsed = path.parse(programPath);
-    return parsed.name + parsed.ext;
 }
 
 /**

@@ -1,5 +1,6 @@
 import { IncomingMessage, ServerResponse } from "http";
-import { isSubprogram, LogEntry, Program, Subprogram, SubprogramJson } from "./tracker_types";
+import { isSubprogram, LogEntryData, Program, Subprogram, SubprogramJson } from "./tracker_types";
+import { createSequentialSocket, SequentialSocket } from "./ipc";
 
 const { IpcServer } = require('./ipc');
 const constants = require('./constants');
@@ -11,7 +12,7 @@ const http = require('http');
 const dev = process.argv[2] === '--dev';
 const PORT = 3211;
 
-const logTypes = Object.freeze(JSON.parse(
+const logTypes: { [key in 'program' | 'begin' | 'end' | 'idle']: number } = Object.freeze(JSON.parse(
     db.prepare('SELECT json_group_object(type, id) FROM ProgramLogTypes;').pluck().get()
 ));
 
@@ -41,21 +42,40 @@ function startHttpServer() {
     });
 }
 
+let subscriber: SequentialSocket | null = null;
+
 function startIpcServer() {
     const server = new IpcServer();
     // server.command('subprogram', payload => {
     //     main(payload);
     //     return true;
     // });
+
+    server.command('subscribe', (payload, socket) => {
+        subscriber = createSequentialSocket(socket);
+        void subscriber.send(lastProgram);
+        socket.on('close', () => {
+            subscriber = null;
+        });
+        socket.on('error', () => {}); // ignore errors
+    });
     server.listen(constants.autoTrackerSocketPath, () => {
         console.info("Vrem's tracking process is listening on socket ", constants.autoTrackerSocketPath);
     });
 }
 
-function addToLogs(data: LogEntry) {
+function getLastLogEntry() {
+    return db.prepare('SELECT * FROM ProgramLogs WHERE timestamp = (SELECT MAX(timestamp) FROM ProgramLogs);').get();
+}
+
+function clearCurrentProgram() {
+    db.prepare('DELETE FROM CurrentProgram;').run();
+}
+
+function addToLogs(data: LogEntryData) {
     dev && console.log('add to logs', data);
 
-    const timestamp = Date.now();
+    const timestamp = data.timestamp || Date.now();
     let type = logTypes.program,
         description = data.description || "",
         path = data.path;
@@ -90,11 +110,38 @@ function addToLogs(data: LogEntry) {
             programId = query.run(path, description, parentId).lastInsertRowid;
         }
 
+        if (type === logTypes.program) {
+            clearCurrentProgram();
+            db.prepare('INSERT INTO CurrentProgram (timestamp, type, programId, lastActiveTimestamp) VALUES (?, ?, ?, ?);')
+                .run(timestamp, type, programId, timestamp);
+        }
+
         db.prepare('INSERT INTO ProgramLogs (timestamp, type, programId) VALUES (?, ?, ?);')
             .run(timestamp, type, programId);
     })();
 }
 
+function saveCurrentProgramToLogs() {
+    const currentProgram = db.prepare('SELECT * FROM CurrentProgram;').get();
+    if (!currentProgram) return;
+
+    const lastEntry = getLastLogEntry();
+    if (lastEntry.type === logTypes.end
+        || lastEntry.timestamp !== currentProgram.timestamp
+        || lastEntry.programId !== currentProgram.programId) {
+        clearCurrentProgram();
+        return;
+    }
+
+    db.transaction(() => {
+        addToLogs({ end: true, timestamp: currentProgram.lastActiveTimestamp });
+        clearCurrentProgram();
+    });
+}
+
+function updateCurrentProgramLastActiveTimestamp(timestamp) {
+    db.prepare('UPDATE CurrentProgram SET lastActiveTimestamp = ?;').run(timestamp);
+}
 
 // Set onExit callbacks to add the last entry to the log file
 {
@@ -112,6 +159,7 @@ function addToLogs(data: LogEntry) {
     startIpcServer();
     startHttpServer();
 
+    saveCurrentProgramToLogs()
     addToLogs({ begin: true, timestamp: Date.now() });
 
     process.on('exit', () => {
@@ -122,7 +170,7 @@ function addToLogs(data: LogEntry) {
 
 // The core code of the tracker process
 
-type ProgramValue = Program | Subprogram | null;
+type ProgramValue = (Program | Subprogram) & { lastActiveTimestamp?: number } | null;
 
 let lastProgram: ProgramValue = null;
 let lastSubprogramTimestamp: number | null = null;
@@ -158,9 +206,13 @@ function main(subprogramData: SubprogramJson | null = null) {
     activeProgram.timestamp = Date.now();
 
     function processProgram(program: Program | Subprogram) {
-        if (lastProgram && lastProgram.path !== program.path || isSubprogram(lastProgram) !== isSubprogram(program)) {
+        if (!lastProgram || lastProgram.path !== program.path || isSubprogram(lastProgram) !== isSubprogram(program)) {
             addToLogs(program);
             lastProgram = program;
+            subscriber && subscriber.send(lastProgram);
+        } else if (program.timestamp - (lastProgram.lastActiveTimestamp || lastProgram.timestamp) > 9999) {
+            lastProgram.lastActiveTimestamp = program.timestamp;
+            updateCurrentProgramLastActiveTimestamp(lastProgram.lastActiveTimestamp);
         }
     }
 

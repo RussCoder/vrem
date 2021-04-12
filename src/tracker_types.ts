@@ -9,11 +9,12 @@ export interface Subprogram extends SubprogramJson {
 }
 
 export interface Program {
+    timestamp: number,
     path: string,
     description: string,
 }
 
-export interface LogEntry extends Partial<Subprogram> {
+export interface LogEntryData extends Partial<Subprogram> {
     begin?: boolean,
     end?: boolean,
     idle?: boolean,

@@ -1,4 +1,4 @@
-'use strict';
+import path from 'path';
 
 function makeDateString(date) {
     return (
@@ -16,11 +16,11 @@ function makeTimeString(date) {
     );
 }
 
-function makeTimeStringWithDate(date = new Date()) {
+export function makeTimeStringWithDate(date = new Date()) {
     return `${makeTimeString(date)} (${makeDateString(date)})`;
 }
 
-function makeDurationString(ms) {
+export function makeDurationString(ms) {
     const hours = Math.floor(ms / (60 * 60 * 1000));
     ms -= hours * 60 * 60 * 1000;
     const minutes = Math.floor(ms / 60 / 1000);
@@ -29,13 +29,15 @@ function makeDurationString(ms) {
     return `${hours ? hours + 'h ' : ''}${minutes ? minutes + 'm ' : ''}${secs ? secs + 's' : ''}` || '0s';
 }
 
-function openUrl(url) {
+export function openUrl(url) {
     const command = (process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open');
     require('child_process').exec(command + ' ' + url);
 }
 
-module.exports = {
-    makeDurationString,
-    makeTimeStringWithDate,
-    openUrl,
-};
+export function getDescriptionByPath(programPath) {
+    if (/^http/.test(programPath)) {
+        return programPath;
+    }
+    const parsed = path.parse(programPath);
+    return parsed.name + parsed.ext;
+}

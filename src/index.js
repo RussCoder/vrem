@@ -186,7 +186,7 @@ program
     .action(require('./report').reportCommand);
 
 program
-    .command('start [name]')
+    .command('start <name>')
     .description('start a new task')
     .action(name => {
         try {

@@ -55,6 +55,13 @@ CREATE TABLE ProgramLogs (
 	"programId" INTEGER REFERENCES Programs(id)
 );
 
+CREATE TABLE CurrentProgram (
+	"timestamp" INTEGER PRIMARY KEY,
+	"type" INTEGER NOT NULL DEFAULT 0 REFERENCES ProgramLogTypes(id),
+	"programId" INTEGER REFERENCES Programs(id),
+	"lastActiveTimestamp" INTEGER
+);
+
 PRAGMA user_version = 1;
 
 COMMIT;

@@ -1,19 +1,27 @@
 <script>
 import CurrentTask from "@/components/CurrentTask";
+import CurrentProgram from "@/components/CurrentProgram";
+import NoConnectionMessage from "@/components/NoConnectionMessage";
 
 export default {
     name: "App",
-    components: { CurrentTask },
+    components: { CurrentTask, CurrentProgram, NoConnectionMessage },
 };
 </script>
 
 <template>
+    <NoConnectionMessage v-if="this.$store.getters.hasConnectionWithServer === false" />
     <div class="header">
         <span class="logo">Vrem</span>
-        <CurrentTask />
-        <RouterLink class="nav_button" to="/">Task Logs</RouterLink>
-        <RouterLink class="nav_button" to="/program-logs">Program Logs</RouterLink>
-        <RouterLink class="nav_button" to="/report">Report</RouterLink>
+        <nav>
+            <RouterLink class="nav_button" to="/">Task Logs</RouterLink>
+            <RouterLink class="nav_button" to="/program-logs">Program Logs</RouterLink>
+            <RouterLink class="nav_button" to="/report">Report</RouterLink>
+        </nav>
+        <div class="current_state">
+            <CurrentTask />
+            <CurrentProgram />
+        </div>
     </div>
     <div class="content">
         <RouterView />
@@ -21,6 +29,10 @@ export default {
 </template>
 
 <style lang="scss" scoped>
+    nav {
+        margin-top: 1em;
+    }
+
     .nav_button {
         margin: 0 1em;
         font-size: 1.5em;
@@ -39,6 +51,15 @@ export default {
         padding: 0.5em 1em 1.5em 1em;
         box-shadow: 0 2px 3px 0 gray;
         font-size: 16px;
+        display: grid;
+        grid-template-columns: auto 1fr;
+
+        .current_state {
+            grid-column: 1 / -1;
+            border-top: 1px solid gray;
+            padding-top: 1em;
+            margin-top: 1em;
+        }
     }
 
     .logo {

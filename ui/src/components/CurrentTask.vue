@@ -68,7 +68,7 @@ export default {
 </script>
 
 <template>
-    <div class="current_task">
+    <div class="current_program">
         <input v-model="name" placeholder="Enter the task name here" />
         <span class="time">{{ makeDurationString(time) }}</span>
         <PhPlayCircle v-if="!currentTask" weight="fill" color="darkgreen" @click="startTask" />
@@ -77,7 +77,7 @@ export default {
 </template>
 
 <style lang="scss" scoped>
-    .current_task {
+    .current_program {
         display: inline-flex;
         margin: 0 1em;
         width: 30em;
@@ -97,6 +97,7 @@ export default {
         }
 
         .time {
+            font-family: monospace;
             align-self: center;
             margin: 0 0.5em;
         }
