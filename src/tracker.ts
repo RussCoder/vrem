@@ -1,23 +1,20 @@
-import { IncomingMessage, ServerResponse } from "http";
+import { createServer, IncomingMessage, ServerResponse } from "http";
 import { isSubprogram, LogEntryData, Program, Subprogram, SubprogramJson } from "./tracker_types";
 import { createSequentialSocket, SequentialSocket } from "./ipc";
+import * as dataUtils from "./data_utils";
+import db from "./db";
+import constants from "./constants";
+import { IpcServer } from "./ipc";
+import fs from 'fs';
 
-const { IpcServer } = require('./ipc');
-const constants = require('./constants');
+const programLogTypes = dataUtils.programLogTypes;
+
 const { getActiveProgram, getIdleTime } = require('../build/Release/vrem_windows.node');
-const fs = require('fs');
-const dataUtils = require('./data_utils');
-const db = require('./db');
-const http = require('http');
 const dev = process.argv[2] === '--dev';
 const PORT = 3211;
 
-const logTypes: { [key in 'program' | 'begin' | 'end' | 'idle']: number } = Object.freeze(JSON.parse(
-    db.prepare('SELECT json_group_object(type, id) FROM ProgramLogTypes;').pluck().get()
-));
-
 function startHttpServer() {
-    const server = http.createServer(async (req: IncomingMessage, res: ServerResponse) => {
+    const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
         try {
             if (req.url === '/' && req.method === 'POST' && req.headers["content-type"] === 'application/json') {
                 const chunks: Array<Buffer> = [];
@@ -76,21 +73,21 @@ function addToLogs(data: LogEntryData) {
     dev && console.log('add to logs', data);
 
     const timestamp = data.timestamp || Date.now();
-    let type = logTypes.program,
+    let type = programLogTypes.program,
         description = data.description || "",
         path = data.path;
 
     if (data.begin) {
-        type = logTypes.begin;
+        type = programLogTypes.begin;
     } else if (data.end) {
-        type = logTypes.end;
+        type = programLogTypes.end;
     } else if (data.idle) {
-        type = logTypes.idle;
+        type = programLogTypes.idle;
     }
 
     let programId = null;
     let parentId = null;
-    if (type === logTypes.program) {
+    if (type === programLogTypes.program) {
         if (!path) return;
         const query = db.prepare('SELECT id FROM Programs WHERE path = ?;').pluck();
         programId = query.get(path);
@@ -100,7 +97,7 @@ function addToLogs(data: LogEntryData) {
     }
 
     db.transaction(() => {
-        if (!programId && type === logTypes.program) {
+        if (!programId && type === programLogTypes.program) {
             const query = db.prepare('INSERT INTO Programs (path, description, parentId) VALUES (?, ?, ?);');
 
             if (data.parent && !parentId) {
@@ -110,7 +107,7 @@ function addToLogs(data: LogEntryData) {
             programId = query.run(path, description, parentId).lastInsertRowid;
         }
 
-        if (type === logTypes.program) {
+        if (type === programLogTypes.program) {
             clearCurrentProgram();
             db.prepare('INSERT INTO CurrentProgram (timestamp, type, programId, lastActiveTimestamp) VALUES (?, ?, ?, ?);')
                 .run(timestamp, type, programId, timestamp);
@@ -126,7 +123,7 @@ function saveCurrentProgramToLogs() {
     if (!currentProgram) return;
 
     const lastEntry = getLastLogEntry();
-    if (lastEntry.type === logTypes.end
+    if (lastEntry.type === programLogTypes.end
         || lastEntry.timestamp !== currentProgram.timestamp
         || lastEntry.programId !== currentProgram.programId) {
         clearCurrentProgram();

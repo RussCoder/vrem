@@ -1,6 +1,4 @@
-'use strict';
-
-const Database = require('better-sqlite3');
+import Database from 'better-sqlite3';
 const fs = require('fs');
 const path = require('path');
 
@@ -14,4 +12,4 @@ if (version === 0) {
     db.exec(sql);
 }
 
-module.exports = db;
+export default db;

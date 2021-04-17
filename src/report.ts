@@ -1,16 +1,26 @@
-'use strict';
+import {
+    getProgramLogEntriesForDates,
+    getTaskLogEntriesForDates,
+    ProgramLogEntry,
+    programLogTypes, TaskLogEntry,
+} from "./data_utils";
 
-const path = require('path');
-const dataUtils = require('./data_utils');
 const colors = require('./colors');
 const { makeDurationString, makeTimeStringWithDate, getDescriptionByPath } = require('./utils');
 
-const programLogTypes = dataUtils.programLogTypes;
+interface RawProgramReportEntry {
+    time: number,
+    description: string | undefined,
+}
 
-function formRawProgramReportFromEntries(logEntries) {
+type RawProgramReport = {
+    [path: string]: RawProgramReportEntry,
+} & { idle?: RawProgramReportEntry }
+
+function formRawProgramReportFromEntries(logEntries: any[]): RawProgramReport {
     const report = {};
 
-    let previousEntry = null;
+    let previousEntry: any = null;
 
     for (const entry of logEntries) {
         if (!previousEntry) {
@@ -50,16 +60,22 @@ function formRawProgramReportFromEntries(logEntries) {
     return report;
 }
 
+interface ProgramReportEntry {
+    path: string,
+    description: string,
+    time: number
+}
+
 /**
  * If there are entries with the same description they should be either united
  * or their descriptions should be amended with a name of the executable file.
  */
-function normalizeRawReport(report) {
+function normalizeRawReport(report: RawProgramReport) {
     const idleEntry = report.idle;
     delete report.idle;
     const idleTime = idleEntry ? idleEntry.time : 0;
 
-    const byDescription = {};
+    const byDescription: Record<string, ProgramReportEntry[]> = {};
 
     for (const [filePath, data] of Object.entries(report)) {
         const key = data.description || getDescriptionByPath(filePath);
@@ -72,11 +88,11 @@ function normalizeRawReport(report) {
         }
     }
 
-    const allEntries = [];
+    const allEntries: ProgramReportEntry[] = [];
 
     for (const array of Object.values(byDescription)) {
         if (array.length > 1) {
-            const byExeName = {};
+            const byExeName: Record<string, ProgramReportEntry[]> = {};
 
             for (const entry of array) {
                 const exeName = getDescriptionByPath(entry.path);
@@ -123,7 +139,7 @@ function normalizeRawReport(report) {
 
 const dateToIsoDateString = date => new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
-function prettyPrintProgramReport(normalizedReport, from, to) {
+function prettyPrintProgramReport(normalizedReport) {
     let result = '\n';
 
     if (!normalizedReport.entries.length) {
@@ -157,23 +173,23 @@ function isoDateStringToDate(string) {
     return dateObject;
 }
 
-function processDates(date, from, to) {
-    date = date && isoDateStringToDate(date) || new Date();
-    from = from && isoDateStringToDate(from) || new Date(date.getTime());
-    to = to && isoDateStringToDate(to) || new Date((date.getTime()));
-    from.setHours(0, 0, 0, 0);
-    to.setHours(23, 59, 59, 999);
+function processDates(date?: string, from?: string, to?: string): [Date, Date] {
+    const dateObj = date && isoDateStringToDate(date) || new Date();
+    const fromObj = from && isoDateStringToDate(from) || new Date(dateObj.getTime());
+    const toObj = to && isoDateStringToDate(to) || new Date((dateObj.getTime()));
+    fromObj.setHours(0, 0, 0, 0);
+    toObj.setHours(23, 59, 59, 999);
 
-    return [from, to];
+    return [fromObj, toObj];
 }
 
 function _getProgramReport(from, to) {
-    const rawReport = formRawProgramReportFromEntries(dataUtils.getProgramLogEntriesForDates(from, to));
+    const rawReport = formRawProgramReportFromEntries(getProgramLogEntriesForDates(from, to));
     return normalizeRawReport(rawReport);
 }
 
-function getReport(fromString, toString) {
-    return _getProgramReport(...processDates(null, fromString, toString));
+export function getReport(fromString, toString) {
+    return _getProgramReport(...processDates(undefined, fromString, toString));
 }
 
 function makeHeader(string = '*******') {
@@ -191,26 +207,36 @@ function getPeriodClause(fromDate, toDate) {
     }
 }
 
-function getTaskReport(fromDate, toDate) {
-    const taskLogs = dataUtils.getTaskLogEntriesForDates(fromDate, toDate);
-    const programLogs = dataUtils.getProgramLogEntriesForDates(fromDate, toDate);
+interface TaskReportEntry extends TaskLogEntry {
+    name: string,
+    time: number,
+    autoEntries: ProgramLogEntry[],
+}
 
-    const unprocessedTasks = taskLogs.map(log => ({
+function getTaskReport(fromDate, toDate): TaskReportEntry[] {
+    const taskLogs = getTaskLogEntriesForDates(fromDate, toDate);
+    const programLogs = getProgramLogEntriesForDates(fromDate, toDate);
+
+    type RawTaskReportEntry = TaskLogEntry & { autoEntries: ProgramLogEntry[] };
+
+    const unprocessedTasks: RawTaskReportEntry[] = taskLogs.map(log => ({
         ...log,
         autoEntries: [{
             type: programLogTypes.begin,
             timestamp: log.startTime
         }]
     }));
-    const processedTasks = [];
+    const processedTasks: typeof unprocessedTasks = [];
 
-    let previousEntry = null;
+    let previousEntry: ProgramLogEntry | null = null;
     for (const logEntry of programLogs) {
-        const processedIndices = [];
+        const processedIndices: number[] = [];
 
         for (let i = 0; i < unprocessedTasks.length; i++) {
             const taskEntry = unprocessedTasks[i];
             if (taskEntry.endTime < logEntry.timestamp) {
+                // "begin" means that the tracker was stopped, so we cannot say that the previous program
+                // was in focus till the very end of the task.
                 if (logEntry.type !== programLogTypes.begin) {
                     taskEntry.autoEntries.push({
                         type: programLogTypes.end,
@@ -246,7 +272,7 @@ function getTaskReport(fromDate, toDate) {
 
     processedTasks.push(...unprocessedTasks); // in case if there is a current task
 
-    const tasks = processedTasks.reduce((obj, entry) => {
+    const tasks: Record<string, TaskReportEntry> = processedTasks.reduce((obj, entry) => {
         if (obj[entry.name]) {
             obj[entry.name].autoEntries.push(...entry.autoEntries);
             obj[entry.name].time += entry.endTime - entry.startTime;
@@ -287,12 +313,12 @@ function prettyPrintTaskReport(taskReport) {
     }
 }
 
-function reportCommand(date, { from, to }) {
+export function reportCommand(date, { from, to }) {
     const [fromDate, toDate] = processDates(date, from, to);
     const periodClause = getPeriodClause(fromDate, toDate);
 
     console.info(colors.cyan(makeHeader('GENERAL REPORT ON USED PROGRAMS' + periodClause)));
-    prettyPrintProgramReport(_getProgramReport(fromDate, toDate), fromDate, toDate);
+    prettyPrintProgramReport(_getProgramReport(fromDate, toDate));
 
     const taskReport = getTaskReport(fromDate, toDate);
 
@@ -301,8 +327,3 @@ function reportCommand(date, { from, to }) {
         prettyPrintTaskReport(taskReport);
     }
 }
-
-module.exports = {
-    getReport,
-    reportCommand,
-};

@@ -1,21 +1,18 @@
-'use strict';
+import db from './db';
 
-const db = require('./db');
+export interface Task {
+    id: number,
+    name: string,
+    startTime: number,
+}
 
-/**
- * @typedef {{id: number, name: string, startTime: number}} Task
- */
-
-/**
- * @returns {Task}
- */
-function getCurrentTask() {
+export function getCurrentTask(): Task {
     return db.prepare(
         `SELECT taskId AS id, name, startTime FROM CurrentTask JOIN Tasks ON taskId = Tasks.id LIMIT 1;`
     ).get();
 }
 
-function stopCurrentTask(currentTask = getCurrentTask()) {
+export function stopCurrentTask(currentTask = getCurrentTask()): Task | false {
     if (!currentTask) return false;
 
     try {
@@ -32,22 +29,19 @@ function stopCurrentTask(currentTask = getCurrentTask()) {
     }
 }
 
-/**
- * Starts a new task.
- * @param {string} name
- * @returns {{
- * success: boolean,
- * reason?: string,
- * activeTask?: object,
- * stoppedTask?: object
- * }}
- */
-function startTask(name) {
+export interface StartTaskResult {
+    success: boolean,
+    reason?: 'already_started',
+    activeTask?: Task,
+    stoppedTask?: Task,
+}
+
+export function startTask(name: string): StartTaskResult {
     try {
         const currentTask = getCurrentTask();
         let id = db.prepare('SELECT id FROM Tasks WHERE name = ?;').pluck().get(name);
 
-        if (currentTask && currentTask.taskId === id) {
+        if (currentTask && currentTask.id === id) {
             return {
                 success: false,
                 reason: 'already_started',
@@ -55,7 +49,7 @@ function startTask(name) {
             };
         }
 
-        const result = { success: true };
+        const result: StartTaskResult = { success: true };
         db.exec('BEGIN;');
         if (!id) {
             const info = db.prepare('INSERT INTO Tasks (name) VALUES (?);').run(name);
@@ -83,7 +77,7 @@ function startTask(name) {
     }
 }
 
-function getTaskLogs(limit = 100, offset = 0) {
+export function getTaskLogs(limit = 100, offset = 0) {
     return db.prepare(`
         SELECT logs.id, Tasks.name as taskName, startTime, endTime
         FROM TaskLogs logs JOIN Tasks ON Tasks.id = logs.taskId
@@ -91,10 +85,3 @@ function getTaskLogs(limit = 100, offset = 0) {
         LIMIT ? OFFSET ?;
     `).all(limit, offset);
 }
-
-module.exports = {
-    getCurrentTask,
-    stopCurrentTask,
-    startTask,
-    getTaskLogs,
-};

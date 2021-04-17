@@ -1,9 +1,7 @@
-'use strict';
-
-const colors = require('./colors');
+import colors from "./colors";
 const fs = require('fs-extra');
 const path = require('path');
-const { appFolder, autoTimeLogsFolder, mainFolder } = require('./data_utils');
+import { appFolder, autoTimeLogsFolder, mainFolder } from './data_utils';
 
 console.info(colors.yellow(`
 Note that the auto-tracking process is stopped.

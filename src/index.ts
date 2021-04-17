@@ -1,15 +1,14 @@
 #!/usr/bin/env node
 
-'use strict';
+import colors from './colors';
+import { ipcRequest } from "./ipc";
+import constants from "./constants";
+import * as utils from './utils';
+import * as manualTask from './task';
 
 const { program } = require('commander');
 const { fork } = require('child_process');
-const colors = require('./colors');
-const constants = require('./constants');
-const { ipcRequest } = require('./ipc');
 const { version } = require('../package.json');
-const utils = require('./utils');
-const manualTask = require('./manualTask');
 const path = require('path');
 
 const sleep = time => new Promise(resolve => setTimeout(resolve, time));
@@ -193,12 +192,12 @@ program
             const result = manualTask.startTask(name.trim());
 
             if (!result.success && result.reason === 'already_started') {
-                console.info(colors.yellow(`Task "${colors.cyan(result.activeTask.name)}" has been already started`));
+                console.info(colors.yellow(`Task "${colors.cyan(result.activeTask?.name)}" has been already started`));
                 return;
             }
 
             if (result.success) {
-                console.info(colors.green(`Task "${colors.cyan(result.activeTask.name)}" has been started successfully`));
+                console.info(colors.green(`Task "${colors.cyan(result.activeTask?.name)}" has been started successfully`));
             }
         } catch (e) {
             console.error(colors.red('Cannot start the task. The error: '));

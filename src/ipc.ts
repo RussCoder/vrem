@@ -77,7 +77,7 @@ export class PersistentConnection {
     };
 }
 
-export function ipcRequest(socketPath, command, payload = null) {
+export function ipcRequest(socketPath, command, payload = null): Promise<any> {
     return new Promise(((resolve, reject) => {
         try {
             const socket = net.createConnection(socketPath, () => {

@@ -1,13 +1,12 @@
-import { PersistentConnection } from "../ipc";
+import { IpcServer, PersistentConnection } from "../ipc";
 import http from 'http';
 import WebSocket from 'ws';
 import { getDescriptionByPath } from "../utils";
+import apiMethods from './api';
+import constants from "../constants";
 
 const express = require('express');
 const path = require('path');
-const apiMethods = require('./api');
-const constants = require('../constants');
-const { IpcServer } = require('../ipc');
 
 (function () {
     new IpcServer().listen(constants.serverSocketPath, () => {

@@ -1,15 +1,14 @@
-'use strict';
+import db from "./db";
 
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const readline = require('readline');
-const db = require('./db');
 
-const appFolder = path.resolve(os.userInfo().homedir, '.vrem');
-const mainFolder = path.resolve(appFolder, 'v0');
-const autoTimeLogsFolder = path.resolve(mainFolder, 'auto_time_logs');
-const manualTimeLogsFolder = path.resolve(mainFolder, 'manual_time_logs');
+export const appFolder = path.resolve(os.userInfo().homedir, '.vrem');
+export const mainFolder = path.resolve(appFolder, 'v0');
+export const autoTimeLogsFolder = path.resolve(mainFolder, 'auto_time_logs');
+export const manualTimeLogsFolder = path.resolve(mainFolder, 'manual_time_logs');
 
 !fs.existsSync(mainFolder) && fs.mkdirSync(mainFolder);
 !fs.existsSync(autoTimeLogsFolder) && fs.mkdirSync(autoTimeLogsFolder);
@@ -72,7 +71,14 @@ async function* getLogEntriesForDates(from = getTodayStart(), to = getTodayEnd()
     }
 }
 
-function getTaskLogEntriesForDates(from = getTodayStart(), to = new Date()) {
+export interface TaskLogEntry {
+    name: string,
+    startTime: number,
+    endTime: number,
+    current?: boolean,
+}
+
+export function getTaskLogEntriesForDates(from = getTodayStart(), to = new Date()): TaskLogEntry[] {
     const limits = { from: from.valueOf(), to: to.valueOf() };
 
     const finished = db.prepare(`
@@ -93,7 +99,14 @@ function getTaskLogEntriesForDates(from = getTodayStart(), to = new Date()) {
     return finished;
 }
 
-function getProgramLogEntriesForDates(from = getTodayStart(), to = new Date()) {
+export interface ProgramLogEntry {
+    timestamp: number,
+    path?: string | null,
+    description?: string | null,
+    type: number,
+}
+
+export function getProgramLogEntriesForDates(from = getTodayStart(), to = new Date()): ProgramLogEntry[] {
     return db.prepare(`
         SELECT timestamp, path, description, type 
         FROM ProgramLogs LEFT JOIN Programs ON programId = Programs.id 
@@ -102,19 +115,6 @@ function getProgramLogEntriesForDates(from = getTodayStart(), to = new Date()) {
     `).all(from.valueOf(), to.valueOf());
 }
 
-const programLogTypes = Object.freeze(JSON.parse(
+export const programLogTypes: { [key in 'program' | 'begin' | 'end' | 'idle']: number } = Object.freeze(JSON.parse(
     db.prepare('SELECT json_group_object(type, id) FROM ProgramLogTypes;').pluck().get()
 ));
-
-module.exports = {
-    getProgramLogEntriesForDates,
-    getTaskLogEntriesForDates,
-    programLogTypes,
-    appFolder,
-    mainFolder,
-    manualTimeLogsFolder,
-    autoTimeLogsFolder,
-    getFileNameByDate,
-    getFullPathToCurrentLogFile,
-    getLogEntriesForDates,
-};
