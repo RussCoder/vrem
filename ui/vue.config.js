@@ -1,8 +1,19 @@
 'use strict';
 
+const path = require('path');
 // const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = {
+    pages: {
+        index: 'src/main.js',
+    },
+    configureWebpack: {
+        resolve: {
+            alias: {
+                '@backend': path.resolve(__dirname, '../src/'),
+            },
+        },
+    },
     devServer: {
         // before: (app, server, compiler) => {
         //     const proxy = createProxyMiddleware('/vrem-api', {
