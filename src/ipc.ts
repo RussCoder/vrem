@@ -46,11 +46,11 @@ export class PersistentConnection {
         this.reconnectTimeout = reconnectTimeout;
         const socket = this.socket = createSequentialSocket(net.createConnection(socketPath));
         socket.setEncoding('utf8');
-        socket.on('connect', () => {
-            console.log('connected');
-        })
+        // socket.on('connect', () => {
+        //     console.log('connected');
+        // })
         socket.on('close', (had_error) => {
-            console.log('close', had_error);
+            //console.log('close', had_error);
             setTimeout(() => this.socket.connect(socketPath), reconnectTimeout);
         });
     }
@@ -65,14 +65,11 @@ export class PersistentConnection {
 
     onData(callback: (any) => void) {
         this.socket.on('data', (data: string) => {
-            console.log(data);
             callback(JSON.parse(data));
         });
     }
 
     send(...args: Parameters<SequentialSocket['send']>) {
-        console.log('pending', (<any>this.socket).pending);
-        console.log('pending', (<any>this.socket).destroyed);
         return this.socket.send(...args);
     };
 }

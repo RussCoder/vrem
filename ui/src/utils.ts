@@ -1,4 +1,4 @@
-export function makeDurationString(ms) {
+export function makeTimeDurationString(ms) {
     const format = number => number.toString().padStart(2, '0');
 
     const hours = Math.floor(ms / (60 * 60 * 1000));

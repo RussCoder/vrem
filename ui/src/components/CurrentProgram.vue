@@ -1,6 +1,6 @@
 <script>
 import { PhPlayCircle, PhStopCircle } from 'phosphor-vue';
-import { makeDurationString } from "@/utils";
+import { makeTimeDurationString } from "@/utils";
 
 export default {
     data() {
@@ -27,7 +27,7 @@ export default {
         },
 
         makeDurationString(ms) {
-            return makeDurationString(ms);
+            return makeTimeDurationString(ms);
         },
     },
     watch: {
@@ -67,7 +67,6 @@ export default {
         align-items: center;
         border-left: 1px solid gray;
         padding-left: 3em;
-        height: 100%;
 
         .indicator {
             background: darkred;

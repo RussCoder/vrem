@@ -11,4 +11,5 @@ const apiMethods = {
     getTaskLogs,
 };
 
+export type ApiMethods = typeof apiMethods;
 export default apiMethods as typeof apiMethods & Record<string, Function>;

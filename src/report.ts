@@ -4,9 +4,8 @@ import {
     ProgramLogEntry,
     programLogTypes, TaskLogEntry,
 } from "./data_utils";
-
-const colors = require('./colors');
-const { makeDurationString, makeTimeStringWithDate, getDescriptionByPath } = require('./utils');
+import colors from "./colors";
+import { makeDurationString, makeTimeStringWithDate, getDescriptionByPath } from './utils';
 
 interface RawProgramReportEntry {
     time: number,
@@ -66,11 +65,16 @@ interface ProgramReportEntry {
     time: number
 }
 
+export interface ProgramReport {
+    idleTime: number,
+    entries: ProgramReportEntry[];
+}
+
 /**
  * If there are entries with the same description they should be either united
  * or their descriptions should be amended with a name of the executable file.
  */
-function normalizeRawReport(report: RawProgramReport) {
+function normalizeRawReport(report: RawProgramReport): ProgramReport {
     const idleEntry = report.idle;
     delete report.idle;
     const idleTime = idleEntry ? idleEntry.time : 0;
@@ -189,7 +193,11 @@ function _getProgramReport(from, to) {
 }
 
 export function getReport(fromString, toString) {
-    return _getProgramReport(...processDates(undefined, fromString, toString));
+    const dates = processDates(undefined, fromString, toString);
+    return {
+        programReport: _getProgramReport(...dates),
+        taskReport: getTaskReport(...dates),
+    };
 }
 
 function makeHeader(string = '*******') {
@@ -210,10 +218,12 @@ function getPeriodClause(fromDate, toDate) {
 interface TaskReportEntry extends TaskLogEntry {
     name: string,
     time: number,
-    autoEntries: ProgramLogEntry[],
+    programReport: ProgramReport,
 }
 
-function getTaskReport(fromDate, toDate): TaskReportEntry[] {
+export type TaskReport = TaskReportEntry[];
+
+function getTaskReport(fromDate: Date, toDate: Date): TaskReport {
     const taskLogs = getTaskLogEntriesForDates(fromDate, toDate);
     const programLogs = getProgramLogEntriesForDates(fromDate, toDate);
 
@@ -272,7 +282,13 @@ function getTaskReport(fromDate, toDate): TaskReportEntry[] {
 
     processedTasks.push(...unprocessedTasks); // in case if there is a current task
 
-    const tasks: Record<string, TaskReportEntry> = processedTasks.reduce((obj, entry) => {
+    interface UnprocessedTaskReportEntry extends TaskLogEntry {
+        name: string,
+        time: number,
+        autoEntries: ProgramLogEntry[],
+    }
+
+    const tasks: Record<string, UnprocessedTaskReportEntry> = processedTasks.reduce((obj, entry) => {
         if (obj[entry.name]) {
             obj[entry.name].autoEntries.push(...entry.autoEntries);
             obj[entry.name].time += entry.endTime - entry.startTime;
@@ -292,10 +308,19 @@ function getTaskReport(fromDate, toDate): TaskReportEntry[] {
         return obj;
     }, {});
 
-    return Object.values(tasks).sort((a, b) => -a.time + b.time);
+    return Object.values(tasks)
+        .sort((a, b) => -a.time + b.time)
+        .map(task => {
+            const result = {
+                ...task,
+                programReport: normalizeRawReport(formRawProgramReportFromEntries(task.autoEntries)),
+            };
+            delete (result as any).autoEntries;
+            return result;
+        });
 }
 
-function prettyPrintTaskReport(taskReport) {
+function prettyPrintTaskReport(taskReport: TaskReport) {
     for (const task of taskReport) {
         console.info(colors.cyan(
             `Task "${colors.brightGreen(task.name)}" took ${colors.white(makeDurationString(task.time))}\n`
@@ -306,14 +331,12 @@ function prettyPrintTaskReport(taskReport) {
             )
             + `\nThe programs used within this task:`));
 
-        const rawReport = formRawProgramReportFromEntries(task.autoEntries);
-        const report = normalizeRawReport(rawReport);
-        prettyPrintProgramReport(report);
+        prettyPrintProgramReport(task.programReport);
         console.info('-'.repeat(25) + '\n');
     }
 }
 
-export function reportCommand(date, { from, to }) {
+export function reportCommand(date: string | undefined, { from, to }: { from?: string, to?: string }) {
     const [fromDate, toDate] = processDates(date, from, to);
     const periodClause = getPeriodClause(fromDate, toDate);
 

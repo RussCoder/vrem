@@ -59,6 +59,7 @@ export default {
             border-top: 1px solid gray;
             padding-top: 1em;
             margin-top: 1em;
+            display: flex;
         }
     }
 

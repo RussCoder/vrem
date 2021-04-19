@@ -79,7 +79,7 @@ trackerConnection.onData(data => {
     currentProgram = data;
     if (currentProgram) currentProgram.description = currentProgram.description || getDescriptionByPath(data.path);
 
-    console.log('Data from tracker', data);
+    //console.log('Data from tracker', data);
     wss.clients.forEach(ws => notifyWs(ws, 'current_program', currentProgram));
 });
 trackerConnection.onClose(() => {
@@ -88,5 +88,5 @@ trackerConnection.onClose(() => {
 });
 
 server.listen(3210, () => {
-    console.log('Server is listening on port 3210');
+    console.info('Server is listening on port 3210');
 });

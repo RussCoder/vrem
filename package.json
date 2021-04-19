@@ -19,6 +19,10 @@
   "bin": {
     "vrem": "dist/index.js"
   },
+  "eslintConfig": {
+    "root": true,
+    "ignorePatterns": ["**/*"]
+  },
   "scripts": {
     "preuninstall": "node dist/index.js off",
     "postinstall": "tsc && node dist/postinstall.js",

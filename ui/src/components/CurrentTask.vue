@@ -1,7 +1,7 @@
 <script>
 import { PhPlayCircle, PhStopCircle } from 'phosphor-vue';
 import { rpc } from "@/api";
-import { makeDurationString } from "@/utils";
+import { makeTimeDurationString } from "@/utils";
 import { ActionTypes } from "@/constants";
 
 export default {
@@ -31,7 +31,7 @@ export default {
         },
 
         makeDurationString(ms) {
-            return makeDurationString(ms);
+            return makeTimeDurationString(ms);
         },
 
         async startTask() {

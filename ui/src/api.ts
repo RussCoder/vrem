@@ -1,5 +1,6 @@
 import store from "@/store";
 import { ActionTypes, MutationTypes } from "@/constants";
+import { ApiMethods } from "@backend/server/api";
 
 let id = 1;
 
@@ -72,4 +73,4 @@ export const rpc = new Proxy({}, {
             }));
         };
     },
-});
+}) as ApiMethods;

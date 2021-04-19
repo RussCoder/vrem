@@ -1,5 +1,5 @@
 <script>
-import { makeDurationString } from "@/utils";
+import { makeTimeDurationString } from "@/utils";
 
 export default {
     props: {
@@ -7,7 +7,7 @@ export default {
     },
     methods: {
         getDuration(entry) {
-            return makeDurationString(entry.endTime - entry.startTime);
+            return makeTimeDurationString(entry.endTime - entry.startTime);
         }
     }
 
