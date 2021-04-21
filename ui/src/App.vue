@@ -10,7 +10,7 @@ export default {
 </script>
 
 <template>
-    <NoConnectionMessage v-if="this.$store.getters.hasConnectionWithServer === false" />
+    <NoConnectionMessage v-if="$store.getters.hasConnectionWithServer === false" />
     <div class="header">
         <span class="logo">Vrem</span>
         <nav>

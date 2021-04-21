@@ -1,5 +1,4 @@
 <script>
-import { PhPlayCircle, PhStopCircle } from 'phosphor-vue';
 import { makeTimeDurationString } from "@/utils";
 
 export default {
@@ -41,9 +40,6 @@ export default {
                 this.interval = setInterval(() => this.updateTime(), 1000);
             }
         },
-    },
-    components: {
-        PhPlayCircle, PhStopCircle
     },
 };
 </script>

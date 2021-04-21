@@ -13,7 +13,7 @@ const path = require('path');
 
 const sleep = time => new Promise(resolve => setTimeout(resolve, time));
 
-async function isProcessAlive(socketPath, waitTime = 300) {
+async function isProcessAlive(socketPath, attempts = 3, waitTime = 150): Promise<boolean> {
     const check = async () => {
         try {
             //return process.kill(pid, 0);
@@ -24,13 +24,13 @@ async function isProcessAlive(socketPath, waitTime = 300) {
         }
     };
 
-    const isAlive = await check();
-    if (!isAlive && waitTime) {
+    let isAlive = await check();
+    for (let i = 0; i < attempts && !isAlive; i++) {
         await sleep(waitTime);
-        return await check();
-    } else {
-        return isAlive;
+        isAlive = await check();
     }
+
+    return isAlive;
 }
 
 function runProcess(filePath) {
@@ -58,9 +58,10 @@ async function _stopProcess(socketPath) {
     return true;
 }
 
-async function startProcess(processName, filePath, socketPath) {
+async function startProcess(processName, filePath, socketPath): Promise<boolean> {
     if (await isProcessAlive(socketPath)) {
-        return console.info(colors.cyan(`The ${processName} process is already running.`));
+        console.info(colors.cyan(`The ${processName} process is already running.`));
+        return true;
     }
 
     console.info(`Starting the ${processName} process...`);
@@ -68,8 +69,10 @@ async function startProcess(processName, filePath, socketPath) {
 
     if (await isProcessAlive(socketPath)) {
         console.info(colors.green(`The ${processName} process has been started.`));
+        return true;
     } else {
         console.info(colors.red(`Failed to start the ${processName} process.`));
+        return false;
     }
 }
 
@@ -148,14 +151,16 @@ program
     .command('ui')
     .description('opens ui')
     .action(async () => {
-        const isAlive = await isProcessAlive(constants.serverSocketPath);
+        let isAlive = await isProcessAlive(constants.serverSocketPath);
         if (!isAlive) {
-            await startProcess('server', './server/server.js', constants.serverSocketPath);
+            isAlive = await startProcess('server', './server/server.js', constants.serverSocketPath);
         }
 
-        const url = 'http://localhost:3210';
-        console.info(`Opening ${url}...`);
-        utils.openUrl('http://localhost:3210');
+        if (isAlive) {
+            const url = 'http://localhost:3210';
+            console.info(`Opening ${url}...`);
+            utils.openUrl('http://localhost:3210');
+        }
     });
 
 program
