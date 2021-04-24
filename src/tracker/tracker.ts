@@ -1,16 +1,13 @@
 import { createServer, IncomingMessage, ServerResponse } from "http";
-import { isSubprogram, LogEntryData, Program, Subprogram, SubprogramJson } from "./tracker_types";
-import { createSequentialSocket, SequentialSocket } from "./ipc";
-import * as dataUtils from "./data_utils";
-import db from "./db";
-import constants from "./constants";
-import { IpcServer } from "./ipc";
+import { isSubprogram, Program, Subprogram, SubprogramJson } from "./tracker_types";
+import { createSequentialSocket, SequentialSocket } from "../ipc";
+import constants from "../constants";
+import { IpcServer } from "../ipc";
 import fs from 'fs';
+import { addToLogs, dev, updateCurrentProgramLastActiveTimestamp, saveCurrentProgramToLogs } from "./tracker_utils";
 
-const programLogTypes = dataUtils.programLogTypes;
+const { getActiveProgram, getIdleTime } = require('../../build/Release/vrem_windows.node');
 
-const { getActiveProgram, getIdleTime } = require('../build/Release/vrem_windows.node');
-const dev = process.argv[2] === '--dev';
 const PORT = 3211;
 
 function startHttpServer() {
@@ -61,85 +58,6 @@ function startIpcServer() {
     });
 }
 
-function getLastLogEntry() {
-    return db.prepare('SELECT * FROM ProgramLogs WHERE timestamp = (SELECT MAX(timestamp) FROM ProgramLogs);').get();
-}
-
-function clearCurrentProgram() {
-    db.prepare('DELETE FROM CurrentProgram;').run();
-}
-
-function addToLogs(data: LogEntryData) {
-    dev && console.log('add to logs', data);
-
-    const timestamp = data.timestamp || Date.now();
-    let type = programLogTypes.program,
-        description = data.description || "",
-        path = data.path;
-
-    if (data.begin) {
-        type = programLogTypes.begin;
-    } else if (data.end) {
-        type = programLogTypes.end;
-    } else if (data.idle) {
-        type = programLogTypes.idle;
-    }
-
-    let programId = null;
-    let parentId = null;
-    if (type === programLogTypes.program) {
-        if (!path) return;
-        const query = db.prepare('SELECT id FROM Programs WHERE path = ?;').pluck();
-        programId = query.get(path);
-        if (data.parent) {
-            parentId = query.get(data.parent.path);
-        }
-    }
-
-    db.transaction(() => {
-        if (!programId && type === programLogTypes.program) {
-            const query = db.prepare('INSERT INTO Programs (path, description, parentId) VALUES (?, ?, ?);');
-
-            if (data.parent && !parentId) {
-                parentId = query.run(data.parent.path, data.parent.description, null).lastInsertRowid;
-            }
-
-            programId = query.run(path, description, parentId).lastInsertRowid;
-        }
-
-        if (type === programLogTypes.program) {
-            clearCurrentProgram();
-            db.prepare('INSERT INTO CurrentProgram (timestamp, type, programId, lastActiveTimestamp) VALUES (?, ?, ?, ?);')
-                .run(timestamp, type, programId, timestamp);
-        }
-
-        db.prepare('INSERT INTO ProgramLogs (timestamp, type, programId) VALUES (?, ?, ?);')
-            .run(timestamp, type, programId);
-    })();
-}
-
-function saveCurrentProgramToLogs() {
-    const currentProgram = db.prepare('SELECT * FROM CurrentProgram;').get();
-    if (!currentProgram) return;
-
-    const lastEntry = getLastLogEntry();
-    if (lastEntry.type === programLogTypes.end
-        || lastEntry.timestamp !== currentProgram.timestamp
-        || lastEntry.programId !== currentProgram.programId) {
-        clearCurrentProgram();
-        return;
-    }
-
-    db.transaction(() => {
-        addToLogs({ end: true, timestamp: currentProgram.lastActiveTimestamp });
-        clearCurrentProgram();
-    });
-}
-
-function updateCurrentProgramLastActiveTimestamp(timestamp) {
-    db.prepare('UPDATE CurrentProgram SET lastActiveTimestamp = ?;').run(timestamp);
-}
-
 // Set onExit callbacks to add the last entry to the log file
 {
     const exit = () => process.exit();
@@ -147,7 +65,7 @@ function updateCurrentProgramLastActiveTimestamp(timestamp) {
     process.on('SIGTERM', exit);
     const exceptionHandler = e => {
         dev && console.error(e);
-        fs.appendFileSync(dataUtils.mainFolder + '/tracker_errors.log', e.stack, 'utf8');
+        fs.appendFileSync(constants.appFolder + '/tracker_errors.log', e.stack, 'utf8');
         process.exit(1);
     };
     process.on('uncaughtException', exceptionHandler);

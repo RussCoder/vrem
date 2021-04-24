@@ -1,8 +1,6 @@
-BEGIN IMMEDIATE;
-
 CREATE TABLE "Tags" (
 	"id" INTEGER PRIMARY KEY,
-	"name" TEXT NOT NULL,
+	"name" TEXT NOT NULL
 );
 CREATE UNIQUE INDEX name ON Tags(name);
 
@@ -44,10 +42,10 @@ CREATE TABLE ProgramLogTypes (
     "type" TEXT NOT NULL
 );
 INSERT INTO ProgramLogTypes (id, type) VALUES
-    (0, "program"),
-    (1, "begin"),
-    (2, "end"),
-    (3, "idle");
+    (0, 'program'),
+    (1, 'begin'),
+    (2, 'end'),
+    (3, 'idle');
 
 CREATE TABLE ProgramLogs (
 	"timestamp" INTEGER PRIMARY KEY,
@@ -63,5 +61,3 @@ CREATE TABLE CurrentProgram (
 );
 
 PRAGMA user_version = 1;
-
-COMMIT;
