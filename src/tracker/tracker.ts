@@ -74,7 +74,7 @@ function startIpcServer() {
     startIpcServer();
     startHttpServer();
 
-    saveCurrentProgramToLogs()
+    saveCurrentProgramToLogs();
     addToLogs({ begin: true, timestamp: Date.now() });
 
     process.on('exit', () => {

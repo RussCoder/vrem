@@ -47,7 +47,7 @@ export interface ProgramLogEntry {
     type: number,
 }
 
-export function getProgramLogEntriesForDates(from = getTodayStart(), to = new Date()): ProgramLogEntry[] {
+export function getProgramLogEntriesForDates(from: number | Date = getTodayStart(), to: number | Date = new Date()): ProgramLogEntry[] {
     return db.prepare(`
         SELECT timestamp, path, description, type 
         FROM ProgramLogs LEFT JOIN Programs ON programId = Programs.id 
@@ -56,6 +56,19 @@ export function getProgramLogEntriesForDates(from = getTodayStart(), to = new Da
     `).all(from.valueOf(), to.valueOf());
 }
 
-export const programLogTypes: { [key in 'program' | 'begin' | 'end' | 'idle']: number } = Object.freeze(JSON.parse(
+export type ProgramLogTypes = { [key in 'program' | 'begin' | 'end' | 'idle']: number };
+
+export const programLogTypes: ProgramLogTypes = Object.freeze(JSON.parse(
     db.prepare('SELECT json_group_object(type, id) FROM ProgramLogTypes;').pluck().get()
 ));
+
+export function getEndEntryForTheCurrentProgram(logEntry: ProgramLogEntry): ProgramLogEntry | null {
+    if (logEntry.type !== programLogTypes.program) return null;
+    const lastActiveTimestamp: number | undefined = db.prepare(`
+        SELECT lastActiveTimestamp 
+        FROM CurrentProgram JOIN Programs ON programId = Programs.id 
+        WHERE timestamp = ? AND path = ?;
+    `).pluck().get(logEntry.timestamp, logEntry.path);
+
+    return lastActiveTimestamp ? { timestamp: lastActiveTimestamp, type: programLogTypes.end } : null;
+}

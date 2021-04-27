@@ -1,4 +1,5 @@
 import {
+    getEndEntryForTheCurrentProgram,
     getProgramLogEntriesForDates,
     getTaskLogEntriesForDates,
     ProgramLogEntry,
@@ -187,12 +188,20 @@ function processDates(date?: string, from?: string, to?: string): [Date, Date] {
     return [fromObj, toObj];
 }
 
-function _getProgramReport(from, to) {
-    const rawReport = formRawProgramReportFromEntries(getProgramLogEntriesForDates(from, to));
+function _getProgramReport(from: Date, to: Date) {
+    const sortedLogEntries = getProgramLogEntriesForDates(from, to);
+    if (sortedLogEntries.length) {
+        // We should take the current program into account and add an artificial "end" entry at the end of array
+        const endEntry = getEndEntryForTheCurrentProgram(sortedLogEntries[sortedLogEntries.length - 1]);
+        if (endEntry) {
+            sortedLogEntries.push(endEntry);
+        }
+    }
+    const rawReport = formRawProgramReportFromEntries(sortedLogEntries);
     return normalizeRawReport(rawReport);
 }
 
-export function getReport(fromString, toString) {
+export function getReport(fromString: string, toString: string) {
     const dates = processDates(undefined, fromString, toString);
     return {
         programReport: _getProgramReport(...dates),

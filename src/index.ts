@@ -12,8 +12,8 @@ const { version } = require('../package.json');
 const path = require('path');
 
 const sleep = time => new Promise(resolve => setTimeout(resolve, time));
-const trackerPath = './tracker/tracker.js'
-const serverPath = './server/server.js';
+const trackerPath = './tracker/tracker'
+const serverPath = './server/server';
 
 async function isProcessAlive(socketPath, attempts = 3, waitTime = 150): Promise<boolean> {
     const check = async () => {
@@ -69,7 +69,8 @@ async function startProcess(processName, filePath, socketPath): Promise<boolean>
     console.info(`Starting the ${processName} process...`);
     runProcess(filePath);
 
-    if (await isProcessAlive(socketPath, 5, 200)) {
+    // it takes about 1 second to start the server process first time
+    if (await isProcessAlive(socketPath, 8, 250)) {
         console.info(colors.green(`The ${processName} process has been started.`));
         return true;
     } else {

@@ -69,7 +69,7 @@ export default {
 
 <template>
     <div class="current_program">
-        <input v-model="name" placeholder="Enter the task name here" />
+        <input v-model="name" placeholder="Enter the task name here" @keypress.enter="startTask" />
         <span class="time">{{ makeDurationString(time) }}</span>
         <PhPlayCircle v-if="!currentTask" weight="fill" color="darkgreen" @click="startTask" />
         <PhStopCircle v-if="currentTask" weight="fill" color="darkred" @click="stopCurrentTask" />

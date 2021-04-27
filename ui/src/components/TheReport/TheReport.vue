@@ -1,11 +1,11 @@
 <script>
 import { rpc } from '@/api';
 import ProgramReport from "@/components/TheReport/ProgramReport";
-import { ElTabs, ElTabPane } from 'element-plus';
+import { ElTabs, ElTabPane, ElButton } from 'element-plus';
 import { makeDurationString } from "@backend/utils";
 
 export default {
-    components: { ProgramReport, ElTabs, ElTabPane },
+    components: { ProgramReport, ElTabs, ElTabPane, ElButton },
     data() {
         const today = new Date().toISOString().split('T')[0];
 
@@ -36,7 +36,7 @@ export default {
 <template>
     <div>
         <h2>The Report</h2>
-        <form @submit.prevent="formReport">
+        <form @submit.prevent="formReport" class="controls">
             <div class="time">
                 <span>Start date:</span>
                 <input v-model="startDate" type="date" />
@@ -45,7 +45,7 @@ export default {
                 <span>End date:</span>
                 <input v-model="endDate" type="date" />
             </div>
-            <input type="submit" value="Form the report" />
+            <ElButton native-type="submit">Form the report</ElButton>
         </form>
         <ElTabs tab-position="left" class="report_wrapper" v-if="report">
             <ElTabPane>
@@ -92,12 +92,17 @@ export default {
         }
     }
 
-    .time {
-        margin: 1em;
+    .controls {
+        display: flex;
+        align-items: center;
 
-        span {
-            display: inline-block;
-            min-width: 5em;
+        .time {
+            margin-right: 1.5em;
+
+            span {
+                display: inline-block;
+                min-width: 5em;
+            }
         }
     }
 </style>

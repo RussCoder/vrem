@@ -1,4 +1,4 @@
-import { getProgramLogEntriesForDates } from "../data_utils";
+import { getProgramLogEntriesForDates, programLogTypes } from "../data_utils";
 import { getCurrentTask, getTaskLogs, stopCurrentTask, startTask } from "../task";
 import { getReport } from "../report";
 
@@ -9,6 +9,9 @@ const apiMethods = {
     stopCurrentTask,
     startTask,
     getTaskLogs,
+    getProgramLogTypes() {
+        return programLogTypes;
+    },
 };
 
 export type ApiMethods = typeof apiMethods;

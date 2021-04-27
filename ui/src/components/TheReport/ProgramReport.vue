@@ -25,16 +25,6 @@ export default defineComponent({
 
 <template>
     <div class="report">
-        <ul>
-            <li v-for="(entry, i) in report.entries" :key="i">
-                <span class="time_string">
-                    <span style="color: darkgreen; white-space: pre">
-                        {{ `(${Math.round(entry.time / totalActiveTime * 10000) / 100}%) `.padEnd(9) }}
-                    </span>
-                    <span style="white-space: pre">{{ makeDurationString(entry.time).padEnd(11) }}</span>
-                </span> - {{ entry.description }}
-            </li>
-        </ul>
         <div style="color: green">
             Total active time: {{ makeDurationString(totalActiveTime) }}
         </div>
@@ -45,6 +35,16 @@ export default defineComponent({
             Total time:
             {{ makeDurationString(totalActiveTime + report.idleTime) }}
         </div>
+        <ul>
+            <li v-for="(entry, i) in report.entries" :key="i">
+                <span class="time_string">
+                    <span style="color: darkgreen; white-space: pre">
+                        {{ `(${Math.round(entry.time / totalActiveTime * 10000) / 100}%) `.padEnd(9) }}
+                    </span>
+                    <span style="white-space: pre">{{ makeDurationString(entry.time).padEnd(11) }}</span>
+                </span> - {{ entry.description }}
+            </li>
+        </ul>
     </div>
 </template>
 

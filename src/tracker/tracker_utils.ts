@@ -76,7 +76,7 @@ export function saveCurrentProgramToLogs() {
     db.transaction(() => {
         addToLogs({ end: true, timestamp: currentProgram.lastActiveTimestamp });
         clearCurrentProgram();
-    });
+    })();
 }
 
 export function updateCurrentProgramLastActiveTimestamp(timestamp) {
