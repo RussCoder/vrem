@@ -1,5 +1,6 @@
 <script>
-import { PhPlayCircle, PhStopCircle } from 'phosphor-vue';
+import PhPlayCircle from '@/assets/icons/play-circle-fill.svg';
+import PhStopCircle from '@/assets/icons/stop-circle-fill.svg';
 import { rpc } from "@/api";
 import { makeTimeDurationString } from "@/utils";
 import { ActionTypes } from "@/constants";
@@ -71,8 +72,8 @@ export default {
     <div class="current_program">
         <input v-model="name" placeholder="Enter the task name here" @keypress.enter="startTask" />
         <span class="time">{{ makeDurationString(time) }}</span>
-        <PhPlayCircle v-if="!currentTask" weight="fill" color="darkgreen" @click="startTask" />
-        <PhStopCircle v-if="currentTask" weight="fill" color="darkred" @click="stopCurrentTask" />
+        <PhPlayCircle v-if="!currentTask" color="darkgreen" @click="startTask" />
+        <PhStopCircle v-if="currentTask" color="darkred" @click="stopCurrentTask" />
     </div>
 </template>
 

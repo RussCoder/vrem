@@ -10,7 +10,6 @@
   "dependencies": {
     "core-js": "^3.10.2",
     "element-plus": "^1.0.2-beta.40",
-    "phosphor-vue": "^4.2.1",
     "vue": "^3.0.11",
     "vue-router": "^4.0.6",
     "vuex": "^4.0.0"
@@ -25,10 +24,12 @@
     "@vue/compiler-sfc": "^3.0.11",
     "@vue/eslint-config-typescript": "^7.0.0",
     "babel-eslint": "^10.1.0",
+    "babel-plugin-import": "^1.13.3",
     "eslint": "^6.8.0",
     "eslint-plugin-vue": "^7.9.0",
     "sass": "^1.32.11",
-    "sass-loader": "^10.1.1"
+    "sass-loader": "^10.1.1",
+    "vue-svg-loader": "^0.17.0-beta.2"
   },
   "browserslist": [
     "last 2 versions"
