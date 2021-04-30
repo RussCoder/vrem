@@ -6,7 +6,7 @@ import { IpcServer } from "../ipc";
 import fs from 'fs';
 import { addToLogs, dev, updateCurrentProgramLastActiveTimestamp, saveCurrentProgramToLogs } from "./tracker_utils";
 
-const { getActiveProgram, getIdleTime } = require('../../build/Release/vrem_windows.node');
+const { getActiveProgram, getIdleTime } = require('../../dist_native/vrem_windows.node');
 
 const PORT = 3211;
 
@@ -65,7 +65,7 @@ function startIpcServer() {
     process.on('SIGTERM', exit);
     const exceptionHandler = e => {
         dev && console.error(e);
-        fs.appendFileSync(constants.appFolder + '/tracker_errors.log', e.stack, 'utf8');
+        fs.appendFileSync(constants.appFolder + '/tracker_errors.log', `\n${new Date()}\n${e.stack}\n`, 'utf8');
         process.exit(1);
     };
     process.on('uncaughtException', exceptionHandler);

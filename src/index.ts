@@ -1,99 +1,21 @@
 #!/usr/bin/env node
 
 import colors from './colors';
-import { ipcRequest } from "./ipc";
 import constants from "./constants";
 import * as utils from './utils';
 import * as manualTask from './task';
+import {
+    isProcessAlive,
+    startProcess,
+    stopProcess,
+    trackerScriptPath,
+    serverScriptPath,
+    trackerProcessName,
+    serverProcessName
+} from "./process";
 
 const { program } = require('commander');
-const { fork } = require('child_process');
 const { version } = require('../package.json');
-const path = require('path');
-
-const sleep = time => new Promise(resolve => setTimeout(resolve, time));
-const trackerPath = './tracker/tracker'
-const serverPath = './server/server';
-
-async function isProcessAlive(socketPath, attempts = 3, waitTime = 150): Promise<boolean> {
-    const check = async () => {
-        try {
-            //return process.kill(pid, 0);
-            const data = await ipcRequest(socketPath, 'ping');
-            return data.name === 'vrem' && data.version === version;
-        } catch (e) {
-            return false;
-        }
-    };
-
-    let isAlive = await check();
-    for (let i = 0; i < attempts && !isAlive; i++) {
-        await sleep(waitTime);
-        isAlive = await check();
-    }
-
-    return isAlive;
-}
-
-function runProcess(filePath) {
-    const proc = fork(path.resolve(__dirname, filePath), {
-        detached: true,
-        stdio: 'ignore',
-        env: {
-            NODE_ENV: 'production',
-        },
-    });
-    proc.unref();
-    proc.disconnect();
-}
-
-async function _stopProcess(socketPath) {
-    let totalTime = 0;
-    const timeLimit = 2000;
-    const step = 500;
-    await ipcRequest(socketPath, 'exit');
-    while (await isProcessAlive(socketPath)) {
-        if (totalTime > timeLimit) return false;
-        totalTime += step;
-        await sleep(step);
-    }
-    return true;
-}
-
-async function startProcess(processName, filePath, socketPath): Promise<boolean> {
-    if (await isProcessAlive(socketPath)) {
-        console.info(colors.cyan(`The ${processName} process is already running.`));
-        return true;
-    }
-
-    console.info(`Starting the ${processName} process...`);
-    runProcess(filePath);
-
-    // it takes about 1 second to start the server process first time
-    if (await isProcessAlive(socketPath, 8, 250)) {
-        console.info(colors.green(`The ${processName} process has been started.`));
-        return true;
-    } else {
-        console.info(colors.red(`Failed to start the ${processName} process.`));
-        return false;
-    }
-}
-
-async function stopProcess(processName, socketPath) {
-    if (await isProcessAlive(socketPath)) {
-        console.info(`Stopping the ${processName} process...`);
-
-        if (await _stopProcess(socketPath)) {
-            console.info(colors.yellow(`The ${processName} process has been stopped.`));
-        } else {
-            console.info(colors.red(`Cannot stop the ${processName} process. Remove it manually.`));
-        }
-
-        return;
-    }
-
-    console.info(colors.yellow(`The ${processName} process has been already stopped.`));
-}
 
 async function checkProcess(processName, socketPath) {
     if (await isProcessAlive(socketPath)) {
@@ -110,8 +32,8 @@ program
     .description('start auto-tracking process')
     .option('-s, --server', 'also start server')
     .action(async ({ server }) => {
-        await startProcess('auto-tracker', trackerPath, constants.autoTrackerSocketPath);
-        server && await startProcess('server', serverPath, constants.serverSocketPath);
+        await startProcess(trackerProcessName, trackerScriptPath, constants.autoTrackerSocketPath);
+        server && await startProcess(serverProcessName, serverScriptPath, constants.serverSocketPath);
     });
 
 program
@@ -119,16 +41,16 @@ program
     .description('stop auto-tracking process')
     .option('-s, --server', 'also stop server')
     .action(async ({ server }) => {
-        await stopProcess('auto-tracker', constants.autoTrackerSocketPath);
-        server && await stopProcess('server', constants.serverSocketPath);
+        await stopProcess(trackerProcessName, constants.autoTrackerSocketPath);
+        server && await stopProcess(serverProcessName, constants.serverSocketPath);
     });
 
 program
     .command('rerun')
     .description('reruns auto-tracking process')
     .action(async () => {
-        await stopProcess('auto-tracker', constants.autoTrackerSocketPath);
-        await startProcess('auto-tracker', trackerPath, constants.autoTrackerSocketPath);
+        await stopProcess(trackerProcessName, constants.autoTrackerSocketPath);
+        await startProcess(trackerProcessName, trackerScriptPath, constants.autoTrackerSocketPath);
     });
 
 const serverCommand = program
@@ -137,17 +59,17 @@ const serverCommand = program
 
 serverCommand.command('on')
     .description('turns server on')
-    .action(() => startProcess('server', serverPath, constants.serverSocketPath));
+    .action(() => startProcess(serverProcessName, serverScriptPath, constants.serverSocketPath));
 
 serverCommand.command('off')
     .description('turns server off')
-    .action(() => stopProcess('server', constants.serverSocketPath));
+    .action(() => stopProcess(serverProcessName, constants.serverSocketPath));
 
 serverCommand.command('rerun')
     .description('reruns server')
     .action(async () => {
-        await stopProcess('server', constants.serverSocketPath);
-        await startProcess('server', serverPath, constants.serverSocketPath)
+        await stopProcess(serverProcessName, constants.serverSocketPath);
+        await startProcess(serverProcessName, serverScriptPath, constants.serverSocketPath)
     });
 
 program
@@ -156,7 +78,7 @@ program
     .action(async () => {
         let isAlive = await isProcessAlive(constants.serverSocketPath);
         if (!isAlive) {
-            isAlive = await startProcess('server', serverPath, constants.serverSocketPath);
+            isAlive = await startProcess(serverProcessName, serverScriptPath, constants.serverSocketPath);
         }
 
         if (isAlive) {
@@ -170,8 +92,8 @@ program
     .command('status')
     .description('check whether auto-tracking process is running.')
     .action(async () => {
-        await checkProcess('auto-tracker', constants.autoTrackerSocketPath);
-        await checkProcess('server', constants.serverSocketPath);
+        await checkProcess(trackerProcessName, constants.autoTrackerSocketPath);
+        await checkProcess(serverProcessName, constants.serverSocketPath);
 
         const currentTask = manualTask.getCurrentTask();
         if (currentTask) {

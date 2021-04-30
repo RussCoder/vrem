@@ -1,5 +1,6 @@
 #pragma comment(lib, "Version.lib")
 
+#define NAPI_VERSION 3
 #define NODE_ADDON_API_DISABLE_DEPRECATED 1
 #include <napi.h>
 

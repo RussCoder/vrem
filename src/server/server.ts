@@ -16,7 +16,9 @@ const path = require('path');
 
 const app = express();
 
-app.use(express.static(path.resolve(__dirname, '../../ui/dist')));
+const uiPath = path.resolve(__dirname, '../../dist_ui');
+
+app.use(express.static(uiPath));
 
 // app.post('/extension', express.json(), async (req, res) => {
 //     //console.log("Extension sent", req.body);
@@ -25,7 +27,7 @@ app.use(express.static(path.resolve(__dirname, '../../ui/dist')));
 // });
 
 app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../../ui/dist/index.html'));
+    res.sendFile(uiPath + '/index.html');
 });
 
 app.use((req, res) => {

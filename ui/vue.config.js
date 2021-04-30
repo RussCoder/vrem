@@ -4,6 +4,7 @@ const path = require('path');
 // const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = {
+    outputDir: '../dist_ui',
     pages: {
         index: 'src/main.js',
     },

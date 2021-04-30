@@ -19,6 +19,12 @@
   "bin": {
     "vrem": "dist/index.js"
   },
+  "files": [
+    "/dist*/",
+    "/binding.gyp",
+    "/sql/",
+    "/native_code"
+  ],
   "eslintConfig": {
     "root": true,
     "ignorePatterns": [
@@ -26,16 +32,17 @@
     ]
   },
   "scripts": {
-    "preuninstall": "node dist/index.js off",
-    "postinstall": "node dist/postinstall.js",
+    "preuninstall": "node dist/index.js off && node dist/index.js server off",
+    "postinstall": "node dist/scripts/postinstall.js",
+    "clean": "git clean -fdX --exclude=!/.*/",
+    "install": "node dist/scripts/compile.js",
     "i": "npm install --ignore-scripts",
     "vrem": "ts-node src/index",
     "tracker": "ts-node src/tracker/tracker --dev",
     "server": "nodemon src/server/server.ts --watch src",
     "tsc": "tsc",
-    "compile": "node-gyp build",
     "build:ui": "cd ui && npm run build && cd ..",
-    "build": "tsc && cd ui && npm run build && cd .. && npm run compile"
+    "build": "tsc && cd ui && npm run build && cd .. && npm run install"
   },
   "dependencies": {
     "better-sqlite3": "^7.1.5",

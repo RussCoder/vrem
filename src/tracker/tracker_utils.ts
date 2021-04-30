@@ -56,7 +56,8 @@ export function addToLogs(data: LogEntryData, updateCurrentProgram = true) {
                 .run(timestamp, type, programId, timestamp);
         }
 
-        db.prepare('INSERT INTO ProgramLogs (timestamp, type, programId) VALUES (?, ?, ?);')
+        const ON_CONFLICT = type === programLogTypes.end ? 'REPLACE' : 'ROLLBACK';
+        db.prepare(`INSERT OR ${ON_CONFLICT} INTO ProgramLogs (timestamp, type, programId) VALUES (?, ?, ?);`)
             .run(timestamp, type, programId);
     })();
 }
