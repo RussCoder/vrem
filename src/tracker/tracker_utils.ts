@@ -56,7 +56,7 @@ export function addToLogs(data: LogEntryData, updateCurrentProgram = true) {
                 .run(timestamp, type, programId, timestamp);
         }
 
-        const ON_CONFLICT = type === programLogTypes.end ? 'REPLACE' : 'ROLLBACK';
+        const ON_CONFLICT = type === programLogTypes.end ? 'REPLACE' : 'ABORT'; // ROLLBACK shouldn't be used inside "transaction()"
         db.prepare(`INSERT OR ${ON_CONFLICT} INTO ProgramLogs (timestamp, type, programId) VALUES (?, ?, ?);`)
             .run(timestamp, type, programId);
     })();

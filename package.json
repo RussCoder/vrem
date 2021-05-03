@@ -1,6 +1,6 @@
 {
   "name": "vrem",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "An open-source automatic time-tracker",
   "author": "RussCoder",
   "license": "The Unlicense",
@@ -16,6 +16,9 @@
   "os": [
     "win32"
   ],
+  "engines": {
+    "node": ">=12"
+  },
   "bin": {
     "vrem": "dist/index.js"
   },
@@ -35,14 +38,15 @@
     "preuninstall": "node dist/index.js off && node dist/index.js server off",
     "postinstall": "node dist/scripts/postinstall.js",
     "clean": "git clean -fdX --exclude=!/.*/",
-    "install": "node dist/scripts/compile.js",
+    "install": "npm run compile || tsc && npm run compile",
+    "compile": "node dist/scripts/compile.js",
     "i": "npm install --ignore-scripts",
     "vrem": "ts-node src/index",
     "tracker": "ts-node src/tracker/tracker --dev",
     "server": "nodemon src/server/server.ts --watch src",
     "tsc": "tsc",
     "build:ui": "cd ui && npm run build && cd ..",
-    "build": "tsc && cd ui && npm run build && cd .. && npm run install"
+    "build": "tsc && cd ui && npm i && npm run build && cd .. && npm run install"
   },
   "dependencies": {
     "better-sqlite3": "^7.1.5",

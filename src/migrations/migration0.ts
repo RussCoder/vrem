@@ -40,6 +40,17 @@ function* getAllLogEntries() {
     }
 }
 
+function getAvailableName(startName: string): string {
+    let index = 0;
+    let name: string;
+    do {
+        name = startName + (index ? '_' + index : '');
+        index++;
+    } while (fs.existsSync(name));
+
+    return name;
+}
+
 export default function migrate0(db) {
     if (!fs.pathExistsSync(autoTimeLogsFolder)) return false;
 
@@ -55,7 +66,7 @@ export default function migrate0(db) {
         }
     }).immediate();
 
-    fs.renameSync(autoTimeLogsFolder, autoTimeLogsFolder + '__processed');
+    fs.renameSync(autoTimeLogsFolder, getAvailableName(autoTimeLogsFolder + '__processed'));
     console.info(colors[errorCount ? 'yellow' : 'green'](
         `Migration 0 finished. ${errorCount ? 'With ' + errorCount + ' errors.' : ''}`
     ));
