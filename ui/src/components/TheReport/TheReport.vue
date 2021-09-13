@@ -1,11 +1,11 @@
 <script>
 import { rpc } from '@/api';
 import ProgramReport from "@/components/TheReport/ProgramReport";
-import { ElTabs, ElTabPane, ElButton } from 'element-plus';
+import { ElTabs, ElButton } from 'element-plus';
 import { makeDurationString } from "@backend/utils";
 
 export default {
-    components: { ProgramReport, ElTabs, ElTabPane, ElButton },
+    components: { ProgramReport, ElTabs, ElButton, ElTabPane: ElTabs.TabPane },
     data() {
         const today = new Date().toISOString().split('T')[0];
 

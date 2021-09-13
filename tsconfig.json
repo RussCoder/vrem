@@ -5,6 +5,7 @@
     "outDir": "./dist",
     "allowJs": true,
     "noImplicitAny": false,
+    "useUnknownInCatchVariables": false,
   },
   "include": ["./src/**/*"]
 }
