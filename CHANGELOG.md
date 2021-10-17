@@ -1,5 +1,9 @@
 # Vrem's changelog
 
+## 0.0.3 (18.10.2021)
+
+- Minor UI improvements.
+
 ## 0.0.2 (17.10.2021)
 
 - Manual task logs became editable.
