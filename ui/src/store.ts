@@ -1,9 +1,21 @@
-import { createStore } from 'vuex'
+import { createStore, StoreOptions } from 'vuex'
 import { MutationTypes, ActionTypes } from './constants';
 import { rpc } from "@/api";
+import { UITaskLogEntry, UITaskLogEntryUpdate } from "@backend/task";
 
-// Create a new store instance.
-export default createStore({
+export interface State {
+    taskLogs: UITaskLogEntry[] | null,
+    currentProgram: any,
+    hasConnectionWithServer: boolean | null,
+}
+
+const getters = {
+    taskLogs: (state: State) => state.taskLogs,
+    currentProgram: (state: State) => state.currentProgram,
+    hasConnectionWithServer: (state: State) => state.hasConnectionWithServer,
+};
+
+export const storeOptions: StoreOptions<State> = {
     state() {
         return {
             taskLogs: null,
@@ -11,13 +23,9 @@ export default createStore({
             hasConnectionWithServer: null,
         };
     },
-    getters: {
-        taskLogs: state => state.taskLogs,
-        currentProgram: state => state.currentProgram,
-        hasConnectionWithServer: state => state.hasConnectionWithServer,
-    },
+    getters,
     mutations: {
-        [MutationTypes.SET_TASK_LOGS](state, newLogs) {
+        [MutationTypes.SET_TASK_LOGS](state, newLogs: UITaskLogEntry[]) {
             state.taskLogs = newLogs;
         },
         [MutationTypes.SET_CURRENT_PROGRAM](state, payload) {
@@ -41,5 +49,15 @@ export default createStore({
                     console.warn("Got unknown notification from the server \n", payload);
             }
         },
+        async [ActionTypes.UPDATE_TASK_LOG_ENTRY](ctx, payload: UITaskLogEntryUpdate) {
+            await rpc.updateTaskLogEntry(payload);
+            ctx.dispatch(ActionTypes.UPDATE_TASK_LOGS);
+        },
     }
-});
+};
+
+export type GettersType = {
+    [key in keyof typeof getters]: ReturnType<(typeof getters)[key]>
+};
+
+export default createStore<State>(storeOptions);

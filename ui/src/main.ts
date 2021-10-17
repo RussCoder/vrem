@@ -3,8 +3,9 @@ import App from './App.vue'
 import { createRouter, createWebHistory } from 'vue-router';
 import ProgramLogList from './components/ProgramLogs/ProgramLogList.vue';
 import TheReport from './components/TheReport/TheReport.vue';
-import TaskLogs from "@/components/TaskLogs/TaskLogs";
+import TaskLogs from "@/components/TaskLogs/TaskLogs.vue";
 import store from "@/store";
+import ThePrograms from "@/components/ThePrograms/ThePrograms.vue";
 //import 'element-plus/lib/theme-chalk/index.css';
 
 const router = createRouter({
@@ -19,6 +20,9 @@ const router = createRouter({
     }, {
         path: '/report',
         component: TheReport,
+    }, {
+        path: '/programs',
+        component: ThePrograms,
     }],
 });
 

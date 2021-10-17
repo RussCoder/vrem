@@ -1,17 +1,23 @@
-<script>
+<script lang="ts">
+import { defineComponent, PropType } from "vue";
 import { makeTimeDurationString } from "@/utils";
+import EditableDateTime from "./EditableDateTime.vue";
+import { UITaskLogEntry, UITaskLogEntryUpdate } from "@backend/task";
 
-export default {
+export default defineComponent({
+    components: { EditableDateTime },
     props: {
-        logs: Array,
+        logs: Array as PropType<UITaskLogEntry[]>,
+    },
+    emits: {
+        change: (data: UITaskLogEntryUpdate) => !!data.id,
     },
     methods: {
         getDuration(entry) {
             return makeTimeDurationString(entry.endTime - entry.startTime);
         }
     }
-
-}
+});
 </script>
 
 <template>
@@ -25,10 +31,17 @@ export default {
             <td class="task_name">{{ entry.taskName }}</td>
             <td class="duration">{{ getDuration(entry) }}</td>
             <td class="time">
-                {{
-                    new Date(entry.startTime).toLocaleTimeString('ru')
-                    + ' - ' + new Date(entry.endTime).toLocaleTimeString('ru')
-                }}
+                <div class="flex">
+                    <EditableDateTime
+                        :timestamp="entry.startTime"
+                        @change="$emit('change', {id: entry.id, startTime: $event})"
+                    />
+                    <span> - </span>
+                    <EditableDateTime
+                        :timestamp="entry.endTime"
+                        @change="$emit('change', {id: entry.id, endTime: $event})"
+                    />
+                </div>
             </td>
         </tr>
     </table>
@@ -40,6 +53,7 @@ export default {
         width: 50em;
         font-size: 20px;
         margin-bottom: 2em;
+        vertical-align: middle;
     }
 
     th {
@@ -50,12 +64,7 @@ export default {
     }
 
     td {
-        padding: 1em 0;
         border-bottom: 1px solid lightgray;
-    }
-
-    .row {
-        padding: 1em;
     }
 
     .duration {
@@ -64,5 +73,12 @@ export default {
 
     .time {
         width: 10em;
+        white-space: nowrap;
+
+        .flex {
+            display: flex;
+            align-items: center;
+            height: 3em;
+        }
     }
 </style>

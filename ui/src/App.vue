@@ -22,6 +22,7 @@ export default {
         <RouterLink class="nav_button" to="/">Task Logs</RouterLink>
         <RouterLink class="nav_button" to="/program-logs">Program Logs</RouterLink>
         <RouterLink class="nav_button" to="/report">Report</RouterLink>
+        <RouterLink class="nav_button" to="/programs">Programs</RouterLink>
     </nav>
     <div class="content">
         <RouterView />

@@ -6,7 +6,7 @@ const path = require('path');
 module.exports = {
     outputDir: '../dist_ui',
     pages: {
-        index: 'src/main.js',
+        index: 'src/main.ts',
     },
     configureWebpack: {
         resolve: {

@@ -57,6 +57,10 @@ function connect() {
 
 connect();
 
+type PromisifiedApiMethods = {
+    [key in keyof ApiMethods]: (...params: Parameters<ApiMethods[key]>) => Promise<ReturnType<ApiMethods[key]>>
+}
+
 export const rpc = new Proxy({}, {
     get(target, prop) {
         return (...params) => {
@@ -73,4 +77,4 @@ export const rpc = new Proxy({}, {
             }));
         };
     },
-}) as ApiMethods;
+}) as PromisifiedApiMethods;

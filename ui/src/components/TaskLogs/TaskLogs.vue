@@ -1,8 +1,10 @@
-<script>
-import TaskLogTable from "@/components/TaskLogs/TaskLogTable";
+<script lang="ts">
+import { defineComponent } from "vue";
+import TaskLogTable from "./TaskLogTable.vue";
 import { ActionTypes } from "@/constants";
+import { UITaskLogEntryUpdate } from "@backend/task";
 
-export default {
+export default defineComponent({
     components: { TaskLogTable },
 
     mounted() {
@@ -17,7 +19,7 @@ export default {
             const sortedLogs = {};
             let dayStart = Infinity;
             let dayEnd = 0;
-            let dayLogs = [];
+            let dayLogs: typeof logs = [];
 
             const updateTimeBorders = timestamp => {
                 if (dayStart !== Infinity) {
@@ -42,14 +44,18 @@ export default {
             return sortedLogs;
         }
     },
-}
-
+    methods: {
+        onChange(data: UITaskLogEntryUpdate) {
+            this.$store.dispatch(ActionTypes.UPDATE_TASK_LOG_ENTRY, data);
+        },
+    }
+});
 </script>
 
 <template>
     <template v-for="[dayStart, logs] of Object.entries(sortedLogs)" :key="dayStart">
         <h2>{{ new Date(+dayStart).toLocaleDateString('ru') }}</h2>
-        <TaskLogTable :logs="logs" />
+        <TaskLogTable :logs="logs" @change="onChange" />
     </template>
 </template>
 

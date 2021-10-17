@@ -1,18 +1,18 @@
 import db from './db';
 
-export interface Task {
+export interface CurrentTask {
     id: number,
     name: string,
     startTime: number,
 }
 
-export function getCurrentTask(): Task {
+export function getCurrentTask(): CurrentTask {
     return db.prepare(
         `SELECT taskId AS id, name, startTime FROM CurrentTask JOIN Tasks ON taskId = Tasks.id LIMIT 1;`
     ).get();
 }
 
-export function stopCurrentTask(currentTask = getCurrentTask()): Task | false {
+export function stopCurrentTask(currentTask = getCurrentTask()): CurrentTask | false {
     if (!currentTask) return false;
 
     try {
@@ -32,8 +32,8 @@ export function stopCurrentTask(currentTask = getCurrentTask()): Task | false {
 export interface StartTaskResult {
     success: boolean,
     reason?: 'already_started',
-    activeTask?: Task,
-    stoppedTask?: Task,
+    activeTask?: CurrentTask,
+    stoppedTask?: CurrentTask,
 }
 
 export function startTask(name: string): StartTaskResult {
@@ -77,11 +77,28 @@ export function startTask(name: string): StartTaskResult {
     }
 }
 
-export function getTaskLogs(limit = 100, offset = 0) {
+export interface UITaskLogEntry {
+    id: number,
+    taskName: string,
+    startTime: number,
+    endTime: number,
+}
+
+export function getTaskLogs(limit = 100, offset = 0): UITaskLogEntry[] {
     return db.prepare(`
         SELECT logs.id, Tasks.name as taskName, startTime, endTime
         FROM TaskLogs logs JOIN Tasks ON Tasks.id = logs.taskId
         ORDER BY startTime DESC
         LIMIT ? OFFSET ?;
     `).all(limit, offset);
+}
+
+export interface UITaskLogEntryUpdate extends Partial<UITaskLogEntry> {
+    id: number,
+}
+
+export function updateTaskLogEntry(data: UITaskLogEntryUpdate): void {
+    const targets = [data.startTime ? 'startTime = :startTime' : '', data.endTime ? 'endTime = :endTime' : '']
+        .filter(t => t).join(',');
+    targets && db.prepare(`UPDATE TaskLogs SET ${targets} WHERE id = :id;`).run(data);
 }

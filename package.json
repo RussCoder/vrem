@@ -58,6 +58,7 @@
   },
   "devDependencies": {
     "@tsconfig/node12": "^1.0.9",
+    "@types/better-sqlite3": "^7.4.0",
     "@types/fs-extra": "^9.0.12",
     "@types/node": "^14.14.41",
     "@types/ws": "^7.4.7",

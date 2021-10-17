@@ -143,6 +143,7 @@ program
             const stoppedTask = manualTask.stopCurrentTask();
             if (stoppedTask) {
                 console.info(colors.green(`Task "${colors.cyan(stoppedTask.name)}" has been stopped.`));
+                console.info(colors.green(`It took ${colors.cyan(utils.makeDurationString(Date.now() - stoppedTask.startTime))}.`));
             } else {
                 console.info(colors.yellow('No task has been started. Nothing to stop.'));
             }
