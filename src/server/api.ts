@@ -1,5 +1,12 @@
 import { getProgramLogEntriesForDates, programLogTypes } from "../data_utils";
-import { getCurrentTask, getTaskLogs, stopCurrentTask, startTask, updateTaskLogEntry } from "../task";
+import {
+    getCurrentTask,
+    getTaskLogs,
+    stopCurrentTask,
+    startTask,
+    updateTaskLogEntry,
+    deleteTaskLogEntry
+} from "../task";
 import { getReport } from "../report";
 import { getAllPrograms } from "../program";
 
@@ -11,6 +18,7 @@ const apiMethods = {
     startTask,
     getTaskLogs,
     updateTaskLogEntry,
+    deleteTaskLogEntry,
     getProgramLogTypes: () => programLogTypes,
     getAllPrograms,
 };

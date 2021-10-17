@@ -6,6 +6,8 @@ import TheReport from './components/TheReport/TheReport.vue';
 import TaskLogs from "@/components/TaskLogs/TaskLogs.vue";
 import store from "@/store";
 import ThePrograms from "@/components/ThePrograms/ThePrograms.vue";
+import 'vfonts/Lato.css';
+import 'vfonts/FiraCode.css';
 //import 'element-plus/lib/theme-chalk/index.css';
 
 const router = createRouter({

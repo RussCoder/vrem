@@ -70,7 +70,7 @@ export default {
 
 <template>
     <div class="current_program">
-        <input v-model="name" placeholder="Enter the task name here" @keypress.enter="startTask" />
+        <input v-model="name" placeholder="Enter a task name here" @keypress.enter="startTask" />
         <span class="time">{{ makeDurationString(time) }}</span>
         <PhPlayCircle v-if="!currentTask" color="darkgreen" @click="startTask" />
         <PhStopCircle v-if="currentTask" color="darkred" @click="stopCurrentTask" />
@@ -86,9 +86,10 @@ export default {
         input {
             flex: 1 1 10em;
             align-self: center;
-            height: 2em;
+            height: 1.5em;
             border-radius: 3px;
             border: 1px solid gray;
+            font-size: 1em;
         }
 
         svg {

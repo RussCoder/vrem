@@ -36,10 +36,19 @@ export interface StartTaskResult {
     stoppedTask?: CurrentTask,
 }
 
+function createNewTask(name: string): number {
+    const info = db.prepare('INSERT INTO Tasks (name) VALUES (?);').run(name);
+    return info.lastInsertRowid as number;
+}
+
+function getTaskIdByName(name: string): number | undefined {
+    return db.prepare('SELECT id FROM Tasks WHERE name = ?;').pluck().get(name);
+}
+
 export function startTask(name: string): StartTaskResult {
     try {
         const currentTask = getCurrentTask();
-        let id = db.prepare('SELECT id FROM Tasks WHERE name = ?;').pluck().get(name);
+        let id = getTaskIdByName(name);
 
         if (currentTask && currentTask.id === id) {
             return {
@@ -52,8 +61,7 @@ export function startTask(name: string): StartTaskResult {
         const result: StartTaskResult = { success: true };
         db.exec('BEGIN;');
         if (!id) {
-            const info = db.prepare('INSERT INTO Tasks (name) VALUES (?);').run(name);
-            id = info.lastInsertRowid;
+            id = createNewTask(name);
         }
         if (currentTask) {
             stopCurrentTask(currentTask);
@@ -97,8 +105,43 @@ export interface UITaskLogEntryUpdate extends Partial<UITaskLogEntry> {
     id: number,
 }
 
+function getTaskIdByTaskLogEntryId(id: number): number {
+    const taskId = db.prepare('SELECT taskId FROM TaskLogs WHERE id = ?;').pluck().get(id);
+    if (!taskId) throw new Error('There is no task log entry with the id ' + id);
+    return taskId;
+}
+
+function deleteTaskIfNotUsed(taskId: number): void {
+    const exists = db.prepare('SELECT EXISTS(SELECT 1 FROM TaskLogs WHERE taskId = ? LIMIT 1);').pluck().get(taskId);
+    if (!exists) {
+        db.prepare("DELETE FROM Tasks WHERE id = ?;").run(taskId);
+    }
+}
+
 export function updateTaskLogEntry(data: UITaskLogEntryUpdate): void {
+    if (data.taskName) {
+        const name = data.taskName;
+        let taskId = getTaskIdByName(name);
+        const oldTaskId = db.prepare('SELECT taskId FROM TaskLogs WHERE id = ?;').pluck().get(data.id);
+        db.transaction(() => {
+            if (!taskId) {
+                taskId = createNewTask(name);
+            }
+            db.prepare(`UPDATE TaskLogs SET taskId = ? WHERE id = ?;`).run(taskId, data.id);
+            deleteTaskIfNotUsed(oldTaskId);
+        })();
+        return;
+    }
+
     const targets = [data.startTime ? 'startTime = :startTime' : '', data.endTime ? 'endTime = :endTime' : '']
         .filter(t => t).join(',');
     targets && db.prepare(`UPDATE TaskLogs SET ${targets} WHERE id = :id;`).run(data);
+}
+
+export function deleteTaskLogEntry(id: number) {
+    const taskId = getTaskIdByTaskLogEntryId(id);
+    db.transaction(() => {
+        db.prepare('DELETE FROM TaskLogs WHERE id = ?;').run(id);
+        deleteTaskIfNotUsed(taskId);
+    })();
 }

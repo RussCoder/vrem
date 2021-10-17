@@ -41,7 +41,6 @@ export default defineComponent({
                 const parts = /(\d\d)\.(\d\d)\.(\d\d\d\d)/.exec(dateString.value);
                 if (!parts) return;
                 const timestamp = Date.parse(`${parts[3]}-${parts[2]}-${parts[1]}T${timeString.value}`);
-                console.log(timestamp - props.timestamp, timeString.value, it._timeString);
                 if (Math.abs(timestamp - props.timestamp) < 1000) return;
                 emit('change', timestamp);
             }
@@ -49,7 +48,9 @@ export default defineComponent({
 
         const onFocusOut = (e: FocusEvent) => {
             if (!root.value?.contains(e.relatedTarget as HTMLInputElement)) {
-                submit();
+                it._timeString = null;
+                it._dateString = null;
+                editing.value = false;
             }
         }
 
@@ -114,6 +115,9 @@ export default defineComponent({
             text-align: center;
             outline: none;
             margin: 0;
+            border: 1px solid lightgray;
+            border-radius: 3px;
+            font-family: v-sans, sans-serif;
         }
 
         input.time {

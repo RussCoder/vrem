@@ -3,9 +3,10 @@ import { defineComponent } from "vue";
 import TaskLogTable from "./TaskLogTable.vue";
 import { ActionTypes } from "@/constants";
 import { UITaskLogEntryUpdate } from "@backend/task";
+import { NDialogProvider } from "naive-ui";
 
 export default defineComponent({
-    components: { TaskLogTable },
+    components: { TaskLogTable, NDialogProvider },
 
     mounted() {
         this.$store.dispatch(ActionTypes.UPDATE_TASK_LOGS);
@@ -53,10 +54,12 @@ export default defineComponent({
 </script>
 
 <template>
-    <template v-for="[dayStart, logs] of Object.entries(sortedLogs)" :key="dayStart">
-        <h2>{{ new Date(+dayStart).toLocaleDateString('ru') }}</h2>
-        <TaskLogTable :logs="logs" @change="onChange" />
-    </template>
+    <NDialogProvider>
+        <template v-for="[dayStart, logs] of Object.entries(sortedLogs)" :key="dayStart">
+            <h2>{{ new Date(+dayStart).toLocaleDateString('ru') }}</h2>
+            <TaskLogTable :logs="logs" @change="onChange" />
+        </template>
+    </NDialogProvider>
 </template>
 
 <style lang="scss" scoped>

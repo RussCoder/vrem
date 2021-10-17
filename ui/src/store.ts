@@ -53,6 +53,10 @@ export const storeOptions: StoreOptions<State> = {
             await rpc.updateTaskLogEntry(payload);
             ctx.dispatch(ActionTypes.UPDATE_TASK_LOGS);
         },
+        async [ActionTypes.DELETE_TASK_LOG_ENTRY](ctx, payload: number) {
+            await rpc.deleteTaskLogEntry(payload);
+            ctx.dispatch(ActionTypes.UPDATE_TASK_LOGS);
+        }
     }
 };
 

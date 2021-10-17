@@ -2,10 +2,11 @@
 import CurrentTask from "@/components/CurrentTask";
 import CurrentProgram from "@/components/CurrentProgram";
 import NoConnectionMessage from "@/components/NoConnectionMessage";
+import { NMessageProvider } from "naive-ui";
 
 export default {
     name: "App",
-    components: { CurrentTask, CurrentProgram, NoConnectionMessage },
+    components: { CurrentTask, CurrentProgram, NoConnectionMessage, NMessageProvider },
 };
 </script>
 
@@ -25,7 +26,9 @@ export default {
         <RouterLink class="nav_button" to="/programs">Programs</RouterLink>
     </nav>
     <div class="content">
-        <RouterView />
+        <NMessageProvider placement="bottom-left">
+            <RouterView />
+        </NMessageProvider>
     </div>
 </template>
 
@@ -101,7 +104,7 @@ export default {
         padding: 0;
         margin: 0;
         font-size: 10px;
-        font-family: Arial, sans-serif;
+        font-family: v-sans, Arial, sans-serif;
     }
 
     #app {
