@@ -1,18 +1,20 @@
-<script>
+<script lang="ts">
+import { defineComponent } from "vue";
 import { rpc } from '@/api';
-import ProgramReport from "@/components/TheReport/ProgramReport";
-import { ElTabs, ElButton } from 'element-plus';
+import ProgramReport from "@/components/TheReport/ProgramReport.vue";
+import { NTabs, NTabPane, NButton } from "naive-ui";
 import { makeDurationString } from "@backend/utils";
 
-export default {
-    components: { ProgramReport, ElTabs, ElButton, ElTabPane: ElTabs.TabPane },
+export default defineComponent({
+    components: { ProgramReport, NTabs, NTabPane, NButton },
     data() {
-        const today = new Date().toISOString().split('T')[0];
+        const date = new Date();
+        const today = new Date(date.valueOf() - 60000 * date.getTimezoneOffset()).toISOString().split('T')[0];
 
         return {
             startDate: today,
             endDate: today,
-            report: null,
+            report: null as any,
         };
     },
 
@@ -30,7 +32,7 @@ export default {
             };
         },
     }
-}
+});
 </script>
 
 <template>
@@ -45,13 +47,10 @@ export default {
                 <span>End date:</span>
                 <input v-model="endDate" type="date" />
             </div>
-            <ElButton native-type="submit">Form the report</ElButton>
+            <NButton attr-type="submit" type="primary">Form the report</NButton>
         </form>
-        <ElTabs tab-position="left" class="report_wrapper" v-if="report">
-            <ElTabPane>
-                <template #label>
-                    <span class="label">General report</span>
-                </template>
+        <NTabs type="line" class="report_wrapper" v-if="report">
+            <NTabPane name="General report">
                 <div class="report">
                     <h3>
                         Report for dates from {{ report.startDate }} to
@@ -59,11 +58,8 @@ export default {
                     </h3>
                     <ProgramReport :report="report.programReport" />
                 </div>
-            </ElTabPane>
-            <ElTabPane v-for="(taskReport, i) in report.taskReport" :key="i">
-                <template #label>
-                    <span class="label">{{ taskReport.name }}</span>
-                </template>
+            </NTabPane>
+            <NTabPane v-for="(taskReport, i) in report.taskReport" :name="taskReport.name" :key="i">
                 <div class="report">
                     <h3>
                         Task report: <span style="color: darkblue">{{ taskReport.name }}</span>
@@ -72,8 +68,8 @@ export default {
                     <h3>Total time: <span style="color: darkblue">{{ makeDurationString(taskReport.time) }}</span></h3>
                     <ProgramReport :report="taskReport.programReport" />
                 </div>
-            </ElTabPane>
-        </ElTabs>
+            </NTabPane>
+        </NTabs>
     </div>
 </template>
 

@@ -38,8 +38,8 @@ export default {
         flex-direction: column;
         font-size: 24px;
         padding: 1em 1em 0 1em;
-        box-shadow: 0 2px 2px 0 gray;
         height: 100%;
+        width: 9em;
         box-sizing: border-box;
 
         .nav_button {
@@ -47,8 +47,6 @@ export default {
             text-decoration: none;
             color: inherit;
             display: inline-block;
-            border: 1px solid gray;
-            border-radius: 0.5em 0 0.5em 0;
             padding: 0.3em 10px;
             box-sizing: border-box;
             white-space: nowrap;
@@ -70,7 +68,6 @@ export default {
     .header {
         margin: 0;
         padding: 0.5em 1em 1.5em 1em;
-        box-shadow: 0 0 2px 0 gray;
         font-size: 16px;
         grid-column: 1 / -1;
         display: flex;
@@ -90,11 +87,13 @@ export default {
 
     .content {
         font-size: 16px;
-        padding: 2rem;
-        margin-left: 1em;
+        padding: 2em 2rem 2rem 3em;
         overflow: auto;
         height: 100%;
         box-sizing: border-box;
+        background: white;
+        box-shadow: inset 0 0 2px 0 gray;
+        border-radius: 1em 0 0 0;
     }
 </style>
 
@@ -114,5 +113,6 @@ export default {
         height: 100vh;
         margin: 0;
         box-sizing: border-box;
+        background-color: rgba(224, 241, 248, 0.22);
     }
 </style>

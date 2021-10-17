@@ -28,8 +28,8 @@ export function addToLogs(data: LogEntryData, updateCurrentProgram = true) {
         type = programLogTypes.idle;
     }
 
-    let programId = null;
-    let parentId = null;
+    let programId: number;
+    let parentId: number;
     if (type === programLogTypes.program) {
         if (!path) return;
         const query = db.prepare('SELECT id FROM Programs WHERE path = ?;').pluck();
@@ -44,10 +44,10 @@ export function addToLogs(data: LogEntryData, updateCurrentProgram = true) {
             const query = db.prepare('INSERT INTO Programs (path, description, parentId) VALUES (?, ?, ?);');
 
             if (data.parent && !parentId) {
-                parentId = query.run(data.parent.path, data.parent.description, null).lastInsertRowid;
+                parentId = query.run(data.parent.path, data.parent.description, null).lastInsertRowid as number;
             }
 
-            programId = query.run(path, description, parentId).lastInsertRowid;
+            programId = query.run(path, description, parentId).lastInsertRowid as number;
         }
 
         if (type === programLogTypes.program && updateCurrentProgram) {

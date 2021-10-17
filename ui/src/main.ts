@@ -8,7 +8,6 @@ import store from "@/store";
 import ThePrograms from "@/components/ThePrograms/ThePrograms.vue";
 import 'vfonts/Lato.css';
 import 'vfonts/FiraCode.css';
-//import 'element-plus/lib/theme-chalk/index.css';
 
 const router = createRouter({
     history: createWebHistory(),

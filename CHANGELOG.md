@@ -1,5 +1,11 @@
 # Vrem's changelog
 
+## 0.0.2 (17.10.2021)
+
+- Manual task logs became editable.
+- A list of all programs was added.
+- Style improvements.
+
 ## 0.0.1 (03.05.2021)
 
 - SQLite database instead of text logs.
