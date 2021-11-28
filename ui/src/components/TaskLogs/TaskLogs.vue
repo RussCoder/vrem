@@ -1,7 +1,7 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 import TaskLogTable from "./TaskLogTable.vue";
-import { ActionTypes } from "@/constants";
+import { ActionTypes } from "@/store";
 import { UITaskLogEntryUpdate } from "@backend/task";
 import { NDialogProvider } from "naive-ui";
 
@@ -9,7 +9,7 @@ export default defineComponent({
     components: { TaskLogTable, NDialogProvider },
 
     mounted() {
-        this.$store.dispatch(ActionTypes.UPDATE_TASK_LOGS);
+        this.$store.dispatch(ActionTypes.updateTaskLogs);
     },
 
     computed: {
@@ -47,7 +47,7 @@ export default defineComponent({
     },
     methods: {
         onChange(data: UITaskLogEntryUpdate) {
-            this.$store.dispatch(ActionTypes.UPDATE_TASK_LOG_ENTRY, data);
+            this.$store.dispatch(ActionTypes.updateTaskLogEntry, data);
         },
     }
 });

@@ -1,5 +1,6 @@
 import store from "@/store";
-import { ActionTypes, MutationTypes } from "@/constants";
+import { ActionTypes } from "@/store";
+import { MutationTypes } from "@/store";
 import { ApiMethods } from "@backend/server/api";
 
 let id = 1;
@@ -18,20 +19,20 @@ resetConnectionPromise();
 const apiUrl = 'ws://localhost:3210/vrem-api';
 
 function connect() {
-    console.log(`Trying to connect ...`);
+    console.info(`Trying to connect ...`);
     ws = new WebSocket(apiUrl);
 
     ws.onopen = () => {
-        store.commit(MutationTypes.SET_HAS_CONNECTION_WITH_SERVER, true);
+        store.commit(MutationTypes.setHasConnectionWithServer, true);
         connectionPromiseResolve();
-        console.log(`%cConnection opened`, `color: green`);
+        console.info(`%cConnection opened`, `color: green`);
     };
 
     ws.onerror = () => {};
 
     ws.onclose = (code, reason) => {
         console.warn(`Connection closed `, code, reason);
-        store.commit(MutationTypes.SET_HAS_CONNECTION_WITH_SERVER, false);
+        store.commit(MutationTypes.setHasConnectionWithServer, false);
         resetConnectionPromise();
         connect();
     };
@@ -48,7 +49,7 @@ function connect() {
                 console.warn("Got message with id, but there is no saved callbacks", data);
             }
         } else if (data.type) {
-            void store.dispatch(ActionTypes.PROCESS_NOTIFICATION_FROM_SERVER, data);
+            void store.dispatch(ActionTypes.processNotificationFromServer, data);
         } else {
             console.warn('Got neither notification nor response from server', data)
         }

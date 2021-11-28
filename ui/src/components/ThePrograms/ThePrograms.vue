@@ -1,7 +1,7 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 import { rpc } from '@/api';
-import { makeDurationString } from "@backend/utils";
+import { makeDurationString } from "@backend/shared_utils";
 import { DbProgram } from "@backend/program";
 
 export default defineComponent({

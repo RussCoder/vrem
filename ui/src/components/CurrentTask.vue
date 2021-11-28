@@ -1,34 +1,42 @@
-<script>
+<script lang="ts">
+import { defineComponent } from "vue";
 import PhPlayCircle from '@/assets/icons/play-circle-fill.svg';
 import PhStopCircle from '@/assets/icons/stop-circle-fill.svg';
-import { rpc } from "@/api";
 import { makeTimeDurationString } from "@/utils";
-import { ActionTypes } from "@/constants";
+import { ActionTypes } from "@/store";
+import { CurrentTask } from "@backend/task";
 
-export default {
+export default defineComponent({
+    components: { PhPlayCircle, PhStopCircle },
+    setup() {
+        return {
+            interval: undefined as number | undefined,
+        }
+    },
     data() {
         return {
-            currentTask: null,
+            currentTask: null as CurrentTask | null,
             displayedName: '',
-            time: null,
+            time: null as number | null,
         }
     },
     async mounted() {
-        this.currentTask = await rpc.getCurrentTask();
+        await this.$store.dispatch(ActionTypes.updateCurrentTask);
+        this.currentTask = this.$store.getters.currentTask;
     },
     computed: {
         name: {
-            get() {
+            get(): string {
                 return this.displayedName || (this.currentTask ? this.currentTask.name : '');
             },
-            set(value) {
+            set(value: string) {
                 this.displayedName = value;
             }
         }
     },
     methods: {
         updateTime() {
-            this.time = Date.now() - this.currentTask.startTime;
+            this.time = Date.now() - (this.currentTask?.startTime || 0);
         },
 
         makeDurationString(ms) {
@@ -36,36 +44,31 @@ export default {
         },
 
         async startTask() {
-            const result = await rpc.startTask(this.name);
-            if (result.success) {
-                this.currentTask = result.activeTask;
-            }
+            await this.$store.dispatch(ActionTypes.startCurrentTask, this.name);
+            this.currentTask = this.$store.getters.currentTask;
         },
 
         async stopCurrentTask() {
-            const stoppedTask = await rpc.stopCurrentTask();
-            if (stoppedTask) {
-                Object.assign(this.$data, this.$options.data.apply(this));
-                this.$store.dispatch(ActionTypes.UPDATE_TASK_LOGS);
+            await this.$store.dispatch(ActionTypes.stopCurrentTask);
+            const currentTask = this.$store.getters.currentTask;
+            if (!currentTask) {
+                Object.assign(this.$data, (this.$options.data as any).apply(this));
             }
         },
     },
     watch: {
-        currentTask(value, oldValue) {
+        currentTask(value) {
             clearInterval(this.interval);
-            this.interval = null;
+            this.interval = undefined;
             if (!value) {
-                Object.assign(this.$data, this.$options.data.call(this));
+                Object.assign(this.$data, (this.$options.data as any).apply(this));
             } else {
                 this.updateTime();
                 this.interval = setInterval(() => this.updateTime(), 1000);
             }
         },
     },
-    components: {
-        PhPlayCircle, PhStopCircle
-    },
-};
+});
 </script>
 
 <template>

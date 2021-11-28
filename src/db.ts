@@ -9,7 +9,7 @@ db.pragma('foreign_keys = ON');
 
 const version = db.pragma('user_version', { simple: true });
 if (version === 0) {
-    console.log('Updating the database schema...');
+    console.info('Updating the database schema...');
     const sql = fs.readFileSync(path.resolve(__dirname, '../sql/init_database.sql'), 'utf-8');
     db.transaction(() => db.exec(sql)).immediate();
     require('./migrations/migration0').default(db);

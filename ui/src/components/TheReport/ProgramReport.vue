@@ -1,7 +1,7 @@
 <script lang="ts">
 import { ProgramReport } from "@backend/report";
 import { defineComponent, PropType } from "vue";
-import { makeDurationString } from "@backend/utils";
+import { makeDurationString } from "@backend/shared_utils";
 
 export default defineComponent({
     props: {

@@ -1,12 +1,31 @@
-<script>
-import CurrentTask from "@/components/CurrentTask";
-import CurrentProgram from "@/components/CurrentProgram";
-import NoConnectionMessage from "@/components/NoConnectionMessage";
-import { NMessageProvider } from "naive-ui";
+<script lang="ts">
+import { defineComponent } from "vue";
+import CurrentTask from "@/components/CurrentTask.vue";
+import CurrentProgram from "@/components/CurrentProgram.vue";
+import NoConnectionMessage from "@/components/NoConnectionMessage.vue";
+import { NMessageProvider, NGlobalStyle, useMessage } from "naive-ui";
+import { useStore } from "vuex";
+import { ActionTypes } from "@/store";
+
+const MessageApiInitializer = defineComponent({
+    setup() {
+        const store = useStore();
+        const message = useMessage();
+        store.dispatch(ActionTypes.setMessageApi, message);
+    },
+    render() {return null}
+});
 
 export default {
     name: "App",
-    components: { CurrentTask, CurrentProgram, NoConnectionMessage, NMessageProvider },
+    components: {
+        CurrentTask,
+        CurrentProgram,
+        NoConnectionMessage,
+        NMessageProvider,
+        NGlobalStyle,
+        MessageApiInitializer
+    },
 };
 </script>
 
@@ -27,6 +46,7 @@ export default {
     </nav>
     <div class="content">
         <NMessageProvider placement="bottom-left">
+            <MessageApiInitializer />
             <RouterView />
         </NMessageProvider>
     </div>
@@ -97,13 +117,19 @@ export default {
     }
 </style>
 
-<style>
+<style lang="scss">
     html,
     body {
         padding: 0;
         margin: 0;
-        font-size: 10px;
+        font-size: 10px !important; // this and some other rules are to override naive-ui global styles
         font-family: v-sans, Arial, sans-serif;
+        line-height: normal !important;
+
+        input {
+            font-family: inherit;
+            font-size: inherit;
+        }
     }
 
     #app {

@@ -3,7 +3,7 @@ import { defineComponent } from "vue";
 import { rpc } from '@/api';
 import ProgramReport from "@/components/TheReport/ProgramReport.vue";
 import { NTabs, NTabPane, NButton } from "naive-ui";
-import { makeDurationString } from "@backend/utils";
+import { makeDurationString } from "@backend/shared_utils";
 
 export default defineComponent({
     components: { ProgramReport, NTabs, NTabPane, NButton },
@@ -76,6 +76,7 @@ export default defineComponent({
 <style lang="scss" scoped>
     .report_wrapper {
         margin: 1em;
+        line-height: 1.6;
 
         .label {
             font-size: 1.2em;

@@ -20,15 +20,6 @@ export function makeTimeStringWithDate(date = new Date()) {
     return `${makeTimeString(date)} (${makeDateString(date)})`;
 }
 
-export function makeDurationString(ms) {
-    const hours = Math.floor(ms / (60 * 60 * 1000));
-    ms -= hours * 60 * 60 * 1000;
-    const minutes = Math.floor(ms / 60 / 1000);
-    ms -= minutes * 60 * 1000;
-    const secs = Math.floor(ms / 1000);
-    return `${hours ? hours + 'h ' : ''}${minutes ? minutes + 'm ' : ''}${secs ? secs + 's' : ''}` || '0s';
-}
-
 export function openUrl(url) {
     const command = (process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open');
     require('child_process').exec(command + ' ' + url);
@@ -41,3 +32,5 @@ export function getDescriptionByPath(programPath) {
     const parsed = path.parse(programPath);
     return parsed.name + parsed.ext;
 }
+
+export { makeDurationString } from './shared_utils';

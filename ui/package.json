@@ -11,9 +11,9 @@
     "@vicons/ionicons5": "^0.11.0",
     "async-validator": "4.0.3",
     "core-js": "^3.17.3",
-    "naive-ui": "^2.19.8",
+    "naive-ui": "^2.21.1",
     "vfonts": "^0.1.0",
-    "vue": "^3.2.11",
+    "vue": "^3.2.23",
     "vue-router": "^4.0.11",
     "vuex": "^4.0.2"
   },

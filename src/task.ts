@@ -6,10 +6,10 @@ export interface CurrentTask {
     startTime: number,
 }
 
-export function getCurrentTask(): CurrentTask {
+export function getCurrentTask(): CurrentTask | null {
     return db.prepare(
         `SELECT taskId AS id, name, startTime FROM CurrentTask JOIN Tasks ON taskId = Tasks.id LIMIT 1;`
-    ).get();
+    ).get() || null;
 }
 
 export function stopCurrentTask(currentTask = getCurrentTask()): CurrentTask | false {
